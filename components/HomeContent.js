@@ -72,18 +72,7 @@ export default function HomeContent({
     ...actividades.map((a) => ({ ...a, tipo: "actividad" })),
   ].sort((a, b) => new Date(a.hora_inicio) - new Date(b.hora_inicio));
 
-  const totalInscritos = equipos.reduce((acc, e) => acc + e.inscritos, 0);
   const maxInscritos = Math.max(0, ...equipos.map((e) => e.inscritos));
-
-  const fechaFormateada = config.evento_fecha
-    ? new Date(config.evento_fecha).toLocaleString("es-MX", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-      })
-    : null;
 
   return (
     <>
@@ -103,13 +92,6 @@ export default function HomeContent({
             Un día de deporte, competencia y unión familiar. Cada rama de la
             familia forma su propio equipo y compite por el trofeo del año.
           </p>
-          <div className="hero-meta">
-            <span>📅 {fechaFormateada || "Fecha por confirmar"}</span>
-            <span>📍 {config.evento_sede || "Sede por confirmar"}</span>
-            <span>
-              <span className="live-dot" /> {totalInscritos} inscritos hasta ahora
-            </span>
-          </div>
           {config.evento_fecha && <Countdown targetIso={config.evento_fecha} />}
           <a href="/inscripcion" className="btn btn-accent">
             ⚡ Inscribirme ahora
