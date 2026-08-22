@@ -245,6 +245,35 @@ export default function AdminPage() {
   const diasOrdenados = Object.keys(porDia);
   const maxPorDia = Math.max(1, ...Object.values(porDia));
 
+  const conFoto = inscripciones.filter((i) => i.foto_url).length;
+
+  const rangosEdad = [
+    { label: "0-5", min: 0, max: 5 },
+    { label: "6-12", min: 6, max: 12 },
+    { label: "13-17", min: 13, max: 17 },
+    { label: "18-30", min: 18, max: 30 },
+    { label: "31-50", min: 31, max: 50 },
+    { label: "51+", min: 51, max: 999 },
+  ].map((r) => ({
+    ...r,
+    count: inscripciones.filter((i) => i.edad !== null && i.edad >= r.min && i.edad <= r.max).length,
+  }));
+  const maxRangoEdad = Math.max(1, ...rangosEdad.map((r) => r.count));
+  const sinEdad = inscripciones.filter((i) => i.edad === null).length;
+
+  const totalInscritosDashboard = inscripciones.length;
+  let acumulado = 0;
+  const donutStops = porEquipo
+    .filter((e) => e.count > 0)
+    .map((e) => {
+      const start = (acumulado / (totalInscritosDashboard || 1)) * 100;
+      acumulado += e.count;
+      const end = (acumulado / (totalInscritosDashboard || 1)) * 100;
+      return `${e.color} ${start}% ${end}%`;
+    });
+  const donutBackground =
+    totalInscritosDashboard > 0 ? `conic-gradient(${donutStops.join(", ")})` : null;
+
   const navItems = [
     { key: "dashboard", label: "Dashboard", icon: "📊" },
     { key: "inscripciones", label: "Inscripciones", icon: "📝", badge: inscripciones.length },
@@ -310,6 +339,30 @@ export default function AdminPage() {
         ) : (
           <>
             {activeTab === "dashboard" && (
+              <>
+              <div className="admin-stats">
+                <div className="stat-card">
+                  <div className="num">{totalInscritosDashboard}</div>
+                  <div className="label">Total inscritos</div>
+                </div>
+                <div className="stat-card">
+                  <div className="num">{equipos.length}</div>
+                  <div className="label">Equipos</div>
+                </div>
+                <div className="stat-card">
+                  <div className="num">{ninos}</div>
+                  <div className="label">Niños</div>
+                </div>
+                <div className="stat-card">
+                  <div className="num">{adultos}</div>
+                  <div className="label">Adultos</div>
+                </div>
+                <div className="stat-card">
+                  <div className="num">{conFoto}</div>
+                  <div className="label">Con foto de perfil</div>
+                </div>
+              </div>
+
               <div className="dashboard-charts">
                 <div className="chart-card">
                   <h4>Inscritos por equipo</h4>
@@ -331,6 +384,29 @@ export default function AdminPage() {
                         <span className="chart-bar-value">{e.count}</span>
                       </div>
                     ))
+                  )}
+                </div>
+
+                <div className="chart-card">
+                  <h4>Distribución por equipo</h4>
+                  {!donutBackground ? (
+                    <p className="empty-chart">Sin datos todavía.</p>
+                  ) : (
+                    <div className="donut-wrap">
+                      <div className="donut-chart" style={{ background: donutBackground }}>
+                        <div className="donut-hole">{totalInscritosDashboard}</div>
+                      </div>
+                      <ul className="donut-legend">
+                        {porEquipo
+                          .filter((e) => e.count > 0)
+                          .map((e) => (
+                            <li key={e.id}>
+                              <span className="legend-dot" style={{ background: e.color }} />
+                              {e.nombre} · {Math.round((e.count / totalInscritosDashboard) * 100)}%
+                            </li>
+                          ))}
+                      </ul>
+                    </div>
                   )}
                 </div>
 
@@ -383,7 +459,31 @@ export default function AdminPage() {
                     </div>
                   )}
                 </div>
+
+                <div className="chart-card">
+                  <h4>Rango de edades</h4>
+                  {totalInscritosDashboard - sinEdad === 0 ? (
+                    <p className="empty-chart">Sin datos todavía.</p>
+                  ) : (
+                    <>
+                      {rangosEdad.map((r) => (
+                        <div className="chart-bar-row" key={r.label}>
+                          <span className="chart-bar-label">{r.label} años</span>
+                          <div className="chart-bar-track">
+                            <div
+                              className="chart-bar-fill"
+                              style={{ width: `${(r.count / maxRangoEdad) * 100}%`, "--bar-color": "var(--accent)" }}
+                            />
+                          </div>
+                          <span className="chart-bar-value">{r.count}</span>
+                        </div>
+                      ))}
+                      {sinEdad > 0 && <p className="hint">{sinEdad} sin edad registrada.</p>}
+                    </>
+                  )}
+                </div>
               </div>
+              </>
             )}
 
             {activeTab === "inscripciones" && (
