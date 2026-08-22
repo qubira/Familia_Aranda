@@ -4,8 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 
 const emptyEditForm = {
   nombreCompleto: "",
-  email: "",
-  telefono: "",
   categoria: "adulto",
   edad: "",
   equipoId: "",
@@ -166,8 +164,6 @@ export default function AdminPage() {
     setEditError("");
     setEditForm({
       nombreCompleto: i.nombre_completo,
-      email: i.email,
-      telefono: i.telefono,
       categoria: i.categoria,
       edad: i.edad ?? "",
       equipoId: String(equipos.find((e) => e.nombre === i.equipo)?.id || ""),
@@ -219,10 +215,7 @@ export default function AdminPage() {
     const term = searchTerm.trim().toLowerCase();
     return inscripciones.filter((i) => {
       const matchesEquipo = !filterEquipoId || String(i.equipo) === filterEquipoId;
-      const matchesTerm =
-        !term ||
-        i.nombre_completo.toLowerCase().includes(term) ||
-        i.email.toLowerCase().includes(term);
+      const matchesTerm = !term || i.nombre_completo.toLowerCase().includes(term);
       return matchesEquipo && matchesTerm;
     });
   }, [inscripciones, searchTerm, filterEquipoId]);
@@ -535,7 +528,7 @@ export default function AdminPage() {
               <div className="filter-bar">
                 <input
                   type="text"
-                  placeholder="Buscar por nombre o email..."
+                  placeholder="Buscar por nombre..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -558,8 +551,6 @@ export default function AdminPage() {
                       <th>Foto</th>
                       <th>Equipo</th>
                       <th>Nombre</th>
-                      <th>Email</th>
-                      <th>Teléfono</th>
                       <th>Categoría</th>
                       <th>Edad</th>
                       <th>Fecha</th>
@@ -589,19 +580,6 @@ export default function AdminPage() {
                               onChange={(e) =>
                                 setEditForm((f) => ({ ...f, nombreCompleto: e.target.value.toUpperCase() }))
                               }
-                            />
-                          </td>
-                          <td className="edit-cell">
-                            <input
-                              type="email"
-                              value={editForm.email}
-                              onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
-                            />
-                          </td>
-                          <td className="edit-cell">
-                            <input
-                              value={editForm.telefono}
-                              onChange={(e) => setEditForm((f) => ({ ...f, telefono: e.target.value }))}
                             />
                           </td>
                           <td className="edit-cell">
@@ -643,8 +621,6 @@ export default function AdminPage() {
                           <td>{i.foto_url ? <img src={i.foto_url} alt="" className="thumb" /> : "—"}</td>
                           <td>{i.equipo}</td>
                           <td>{i.nombre_completo}</td>
-                          <td>{i.email}</td>
-                          <td>{i.telefono}</td>
                           <td>{i.categoria === "nino" ? "Niño" : "Adulto"}</td>
                           <td>{i.edad ?? "—"}</td>
                           <td>{new Date(i.created_at).toLocaleString("es-MX")}</td>
@@ -666,7 +642,7 @@ export default function AdminPage() {
                     )}
                     {filteredInscripciones.length === 0 && (
                       <tr>
-                        <td colSpan={9} style={{ textAlign: "center", color: "var(--muted)" }}>
+                        <td colSpan={7} style={{ textAlign: "center", color: "var(--muted)" }}>
                           {inscripciones.length === 0
                             ? "Aún no hay inscripciones."
                             : "Ningún resultado con ese filtro."}

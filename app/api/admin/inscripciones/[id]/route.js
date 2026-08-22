@@ -28,8 +28,7 @@ export async function PATCH(request, { params }) {
 
   const [updated] = await sql`
     UPDATE inscripciones
-    SET nombre_completo = ${data.nombreCompleto}, email = ${data.email},
-        telefono = ${data.telefono}, categoria = ${data.categoria},
+    SET nombre_completo = ${data.nombreCompleto}, categoria = ${data.categoria},
         edad = ${data.edad}, equipo_id = ${data.equipoId}
     WHERE id = ${id}
     RETURNING id

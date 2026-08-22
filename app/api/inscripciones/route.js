@@ -28,8 +28,8 @@ export async function POST(request) {
   }
 
   const [inscripcion] = await sql`
-    INSERT INTO inscripciones (equipo_id, nombre_completo, email, telefono, categoria, edad, foto_url)
-    VALUES (${data.equipoId}, ${data.nombreCompleto}, ${data.email}, ${data.telefono}, ${data.categoria}, ${data.edad}, ${fotoUrl})
+    INSERT INTO inscripciones (equipo_id, nombre_completo, categoria, edad, foto_url)
+    VALUES (${data.equipoId}, ${data.nombreCompleto}, ${data.categoria}, ${data.edad}, ${fotoUrl})
     RETURNING id
   `;
 

@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 
 const initialForm = {
   nombreCompleto: "",
-  email: "",
-  telefono: "",
   categoria: "adulto",
   edad: "",
   equipoId: "",
@@ -139,31 +137,6 @@ export default function InscripcionPage() {
                 required
                 maxLength={150}
               />
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="email">Correo electrónico</label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="telefono">Teléfono</label>
-                <input
-                  id="telefono"
-                  name="telefono"
-                  type="tel"
-                  value={form.telefono}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
             </div>
 
             <div className="form-row">

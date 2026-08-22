@@ -13,8 +13,8 @@ CREATE TABLE IF NOT EXISTS inscripciones (
   id SERIAL PRIMARY KEY,
   equipo_id INTEGER NOT NULL REFERENCES equipos(id),
   nombre_completo VARCHAR(150) NOT NULL,
-  email VARCHAR(150) NOT NULL,
-  telefono VARCHAR(30) NOT NULL,
+  email VARCHAR(150),
+  telefono VARCHAR(30),
   categoria VARCHAR(20) NOT NULL CHECK (categoria IN ('nino', 'adulto')),
   edad INTEGER,
   foto_url TEXT,
@@ -32,6 +32,8 @@ CREATE TABLE IF NOT EXISTS fotos_evento (
 ALTER TABLE equipos ADD COLUMN IF NOT EXISTS logo_url TEXT;
 ALTER TABLE equipos ADD COLUMN IF NOT EXISTS logo_public_id TEXT;
 ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS foto_url TEXT;
+ALTER TABLE inscripciones ALTER COLUMN email DROP NOT NULL;
+ALTER TABLE inscripciones ALTER COLUMN telefono DROP NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_inscripciones_equipo ON inscripciones(equipo_id);
 
