@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+const UNIT_LABELS = ["Días", "Horas", "Min", "Seg"];
+
 function getRemaining(targetIso) {
   const diff = new Date(targetIso).getTime() - Date.now();
   if (diff <= 0) return null;
@@ -15,7 +17,9 @@ function getRemaining(targetIso) {
 }
 
 export default function Countdown({ targetIso }) {
-  const [remaining, setRemaining] = useState(() => getRemaining(targetIso));
+  // undefined until the first client-side effect runs, so the server-rendered
+  // markup and the initial client render always match (no Date access during render).
+  const [remaining, setRemaining] = useState(undefined);
 
   useEffect(() => {
     setRemaining(getRemaining(targetIso));
@@ -23,7 +27,20 @@ export default function Countdown({ targetIso }) {
     return () => clearInterval(interval);
   }, [targetIso]);
 
-  if (!remaining) {
+  if (remaining === undefined) {
+    return (
+      <div className="countdown">
+        {UNIT_LABELS.map((label) => (
+          <div className="countdown-box" key={label}>
+            <span className="countdown-value">--</span>
+            <span className="countdown-label">{label}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (remaining === null) {
     return <div className="countdown-today">🎉 ¡Hoy es el gran día!</div>;
   }
 

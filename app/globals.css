@@ -300,11 +300,35 @@ h3 {
 }
 
 /* Cuadro de eliminacion directa */
-.bracket-wrap {
+.bracket-panel {
+  position: relative;
+  background: linear-gradient(160deg, var(--navy) 0%, var(--navy-light) 100%);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 12px 32px rgba(6, 15, 40, 0.35);
+}
+
+.bracket-panel-stripes {
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.05) 0px,
+    rgba(255, 255, 255, 0.05) 14px,
+    transparent 14px,
+    transparent 28px
+  );
+  pointer-events: none;
+}
+
+.bracket-panel-inner {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 28px;
+  gap: 32px;
+  padding: 40px 24px;
 }
 
 .bracket {
@@ -324,23 +348,24 @@ h3 {
 
 .bracket-round-label {
   font-family: var(--font-display);
-  font-size: 0.85rem;
-  letter-spacing: 0.06em;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--navy);
-  margin-bottom: 16px;
+  color: var(--gold);
+  margin-bottom: 20px;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
 }
 
 .bracket-connector-group {
   display: flex;
   flex-direction: column;
   justify-content: space-around;
-  gap: 32px;
+  gap: 36px;
   position: relative;
 }
 
 .bracket-connector-group.connected {
-  padding-right: 28px;
+  padding-right: 32px;
 }
 
 .bracket-connector-group.connected .bracket-match {
@@ -351,10 +376,10 @@ h3 {
   content: "";
   position: absolute;
   top: 50%;
-  right: -28px;
-  width: 28px;
-  height: 2px;
-  background: var(--border);
+  right: -32px;
+  width: 32px;
+  height: 3px;
+  background: var(--accent);
 }
 
 .bracket-connector-group.connected::after {
@@ -363,57 +388,106 @@ h3 {
   right: 0;
   top: 25%;
   bottom: 25%;
-  width: 2px;
-  background: var(--border);
+  width: 3px;
+  background: var(--accent);
 }
 
 .bracket-round-final {
   position: relative;
 }
 
+.bracket-round-final::before {
+  content: "";
+  position: absolute;
+  left: -24px;
+  top: 50%;
+  width: 24px;
+  height: 3px;
+  background: var(--accent);
+}
+
 .bracket-match {
-  background: var(--card);
-  border: 2px solid var(--border);
-  border-radius: 12px;
+  background: white;
+  border-radius: 10px;
   overflow: hidden;
-  width: 190px;
-  box-shadow: 0 2px 8px rgba(16, 23, 40, 0.06);
+  width: 210px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
 }
 
 .bracket-team {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 10px 14px;
-  font-weight: 700;
-  font-size: 0.88rem;
-  border-bottom: 1px solid var(--border);
-  border-left: 4px solid var(--team-color, transparent);
+  gap: 10px;
+  padding: 10px 12px;
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: var(--text);
+  border-left: 5px solid var(--team-color, transparent);
 }
 
-.bracket-team:last-child {
-  border-bottom: none;
+.bracket-match-vs {
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+  background: var(--bg);
+  padding: 2px 0;
+}
+
+.bracket-team-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .bracket-team.winner {
-  background: color-mix(in srgb, var(--field) 14%, var(--card));
+  background: color-mix(in srgb, var(--field) 16%, white);
   color: var(--field);
 }
 
 .bracket-team .check {
   color: var(--field);
-  font-weight: 800;
+  font-weight: 900;
+  font-size: 1rem;
+}
+
+.bracket-badge {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid var(--team-color, var(--border));
+}
+
+.bracket-badge-dot {
+  background: var(--team-color, var(--border));
 }
 
 .bracket-champion {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   font-family: var(--font-display);
-  font-size: 1.4rem;
-  color: var(--navy);
-  background: color-mix(in srgb, var(--gold) 20%, var(--card));
-  border: 2px solid var(--gold);
+  font-size: 1.5rem;
+  color: #4a2f00;
+  background: linear-gradient(135deg, var(--gold), #f0a500);
   border-radius: 999px;
-  padding: 12px 28px;
+  padding: 12px 28px 12px 12px;
+  box-shadow: 0 8px 20px rgba(255, 201, 51, 0.35);
+}
+
+.bracket-champion .bracket-badge {
+  width: 40px;
+  height: 40px;
+  border-color: white;
+}
+
+.bracket-champion strong {
+  color: #2a1a00;
 }
 
 .btn {

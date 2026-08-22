@@ -1,18 +1,23 @@
+function TeamBadge({ nombre, color, logo }) {
+  return logo ? (
+    <img src={logo} alt={nombre} className="bracket-badge" style={{ "--team-color": color }} />
+  ) : (
+    <span className="bracket-badge bracket-badge-dot" style={{ "--team-color": color }} />
+  );
+}
+
 function MatchBox({ p }) {
   return (
     <div className="bracket-match">
-      <div
-        className={`bracket-team${p.ganador_id === p.equipo_a_id ? " winner" : ""}`}
-        style={{ "--team-color": p.equipo_a_color }}
-      >
-        <span>{p.equipo_a_nombre}</span>
+      <div className={`bracket-team${p.ganador_id === p.equipo_a_id ? " winner" : ""}`}>
+        <TeamBadge nombre={p.equipo_a_nombre} color={p.equipo_a_color} logo={p.equipo_a_logo} />
+        <span className="bracket-team-name">{p.equipo_a_nombre}</span>
         {p.ganador_id === p.equipo_a_id && <span className="check">✓</span>}
       </div>
-      <div
-        className={`bracket-team${p.ganador_id === p.equipo_b_id ? " winner" : ""}`}
-        style={{ "--team-color": p.equipo_b_color }}
-      >
-        <span>{p.equipo_b_nombre}</span>
+      <div className="bracket-match-vs">VS</div>
+      <div className={`bracket-team${p.ganador_id === p.equipo_b_id ? " winner" : ""}`}>
+        <TeamBadge nombre={p.equipo_b_nombre} color={p.equipo_b_color} logo={p.equipo_b_logo} />
+        <span className="bracket-team-name">{p.equipo_b_nombre}</span>
         {p.ganador_id === p.equipo_b_id && <span className="check">✓</span>}
       </div>
     </div>
@@ -32,6 +37,12 @@ export default function Bracket({ partidos }) {
       : campeonId === final?.equipo_b_id
         ? final.equipo_b_nombre
         : null;
+  const campeonLogo =
+    campeonId === final?.equipo_a_id
+      ? final.equipo_a_logo
+      : campeonId === final?.equipo_b_id
+        ? final.equipo_b_logo
+        : null;
   const campeonColor =
     campeonId === final?.equipo_a_id
       ? final.equipo_a_color
@@ -40,30 +51,36 @@ export default function Bracket({ partidos }) {
         : null;
 
   return (
-    <div className="bracket-wrap">
-      <div className="bracket">
-        {semifinales.length > 0 && (
-          <div className="bracket-round">
-            <div className="bracket-round-label">Semifinal</div>
-            <div className={`bracket-connector-group${semifinales.length === 2 ? " connected" : ""}`}>
-              {semifinales.map((p) => (
-                <MatchBox key={p.id} p={p} />
-              ))}
+    <div className="bracket-panel">
+      <div className="bracket-panel-stripes" />
+      <div className="bracket-panel-inner">
+        <div className="bracket">
+          {semifinales.length > 0 && (
+            <div className="bracket-round">
+              <div className="bracket-round-label">Semifinal</div>
+              <div className={`bracket-connector-group${semifinales.length === 2 ? " connected" : ""}`}>
+                {semifinales.map((p) => (
+                  <MatchBox key={p.id} p={p} />
+                ))}
+              </div>
             </div>
-          </div>
-        )}
-        {final && (
-          <div className="bracket-round bracket-round-final">
-            <div className="bracket-round-label">Final</div>
-            <MatchBox p={final} />
+          )}
+          {final && (
+            <div className="bracket-round bracket-round-final">
+              <div className="bracket-round-label">Final</div>
+              <MatchBox p={final} />
+            </div>
+          )}
+        </div>
+        {campeonNombre && (
+          <div className="bracket-champion">
+            <TeamBadge nombre={campeonNombre} color={campeonColor} logo={campeonLogo} />
+            <span>
+              🏆 Campeón: <strong>{campeonNombre}</strong>
+            </span>
           </div>
         )}
       </div>
-      {campeonNombre && (
-        <div className="bracket-champion">
-          🏆 Campeón: <span style={{ color: campeonColor }}>{campeonNombre}</span>
-        </div>
-      )}
     </div>
   );
 }
