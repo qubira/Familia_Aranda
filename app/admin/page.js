@@ -586,7 +586,9 @@ export default function AdminPage() {
                           <td className="edit-cell">
                             <input
                               value={editForm.nombreCompleto}
-                              onChange={(e) => setEditForm((f) => ({ ...f, nombreCompleto: e.target.value }))}
+                              onChange={(e) =>
+                                setEditForm((f) => ({ ...f, nombreCompleto: e.target.value.toUpperCase() }))
+                              }
                             />
                           </td>
                           <td className="edit-cell">

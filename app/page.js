@@ -1,4 +1,5 @@
 import { sql } from "@/lib/db";
+import HomeContent from "@/components/HomeContent";
 
 export const dynamic = "force-dynamic";
 
@@ -15,67 +16,10 @@ async function getEquipos() {
 
 export default async function Home() {
   const equipos = await getEquipos();
-  const totalInscritos = equipos.reduce((acc, e) => acc + e.inscritos, 0);
-  const maxInscritos = Math.max(0, ...equipos.map((e) => e.inscritos));
 
   return (
     <main>
-      <section className="hero">
-        <div className="container">
-          <span className="badge">🏆 Evento Deportivo Familiar</span>
-          <h1>
-            Evento Deportivo
-            <br />
-            Familiar <span className="accent">Aranda</span> 2026
-          </h1>
-          <p className="subtitle">
-            Un día de deporte, competencia y unión familiar. Cada rama de la
-            familia forma su propio equipo y compite por el trofeo del año.
-          </p>
-          <div className="hero-meta">
-            <span>📅 Fecha por confirmar</span>
-            <span>📍 Sede por confirmar</span>
-            <span>👨‍👩‍👧‍👦 {totalInscritos} inscritos hasta ahora</span>
-          </div>
-          <a href="/inscripcion" className="btn btn-accent">
-            ⚡ Inscribirme ahora
-          </a>
-        </div>
-      </section>
-
-      <div className="section-divider" />
-
-      <section className="section">
-        <div className="container">
-          <h2>Los equipos</h2>
-          <p className="lead">
-            Elige tu equipo al inscribirte. ¡Cada familia contra las demás,
-            todos representando el mismo apellido!
-          </p>
-          <div className="teams-grid">
-            {equipos.map((equipo) => (
-              <div
-                key={equipo.id}
-                className={`team-card${equipo.inscritos > 0 && equipo.inscritos === maxInscritos ? " leader" : ""}`}
-                style={{ "--team-color": equipo.color }}
-              >
-                {equipo.inscritos > 0 && equipo.inscritos === maxInscritos && (
-                  <span className="leader-crown">👑 Líder</span>
-                )}
-                {equipo.logo_url ? (
-                  <img src={equipo.logo_url} alt={equipo.nombre} className="team-logo" />
-                ) : (
-                  <div className="team-dot" />
-                )}
-                <h3>{equipo.nombre}</h3>
-                <p>{equipo.descripcion}</p>
-                <span className="team-count">{equipo.inscritos}</span>
-                <span className="team-count-label">inscritos</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <HomeContent initialEquipos={equipos} />
 
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="container" style={{ textAlign: "center" }}>

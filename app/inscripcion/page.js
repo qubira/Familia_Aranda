@@ -33,7 +33,7 @@ export default function InscripcionPage() {
 
   function handleChange(e) {
     const { name, value } = e.target;
-    setForm((f) => ({ ...f, [name]: value }));
+    setForm((f) => ({ ...f, [name]: name === "nombreCompleto" ? value.toUpperCase() : value }));
   }
 
   async function handleFotoChange(e) {
