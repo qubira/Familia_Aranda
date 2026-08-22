@@ -15,20 +15,28 @@ function getInitials(nombre) {
     .toUpperCase();
 }
 
-export default function HomeContent({ initialEquipos, initialInscritos, initialConfig, initialPartidos }) {
+export default function HomeContent({
+  initialEquipos,
+  initialInscritos,
+  initialConfig,
+  initialPartidos,
+  initialActividades,
+}) {
   const [equipos, setEquipos] = useState(initialEquipos);
   const [inscritos, setInscritos] = useState(initialInscritos);
   const [config, setConfig] = useState(initialConfig || {});
   const [partidos, setPartidos] = useState(initialPartidos || []);
+  const [actividades, setActividades] = useState(initialActividades || []);
 
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
-        const [equiposRes, inscritosRes, configRes, partidosRes] = await Promise.all([
+        const [equiposRes, inscritosRes, configRes, partidosRes, actividadesRes] = await Promise.all([
           fetch("/api/equipos", { cache: "no-store" }),
           fetch("/api/inscritos", { cache: "no-store" }),
           fetch("/api/config", { cache: "no-store" }),
           fetch("/api/partidos", { cache: "no-store" }),
+          fetch("/api/actividades", { cache: "no-store" }),
         ]);
         if (equiposRes.ok) {
           const data = await equiposRes.json();
@@ -46,6 +54,10 @@ export default function HomeContent({ initialEquipos, initialInscritos, initialC
           const data = await partidosRes.json();
           if (data.partidos) setPartidos(data.partidos);
         }
+        if (actividadesRes.ok) {
+          const data = await actividadesRes.json();
+          if (data.actividades) setActividades(data.actividades);
+        }
       } catch {
         // Silently retry on the next interval tick.
       }
@@ -53,6 +65,11 @@ export default function HomeContent({ initialEquipos, initialInscritos, initialC
 
     return () => clearInterval(interval);
   }, []);
+
+  const scheduleItems = [
+    ...partidos.map((p) => ({ ...p, tipo: "partido" })),
+    ...actividades.map((a) => ({ ...a, tipo: "actividad" })),
+  ].sort((a, b) => new Date(a.hora_inicio) - new Date(b.hora_inicio));
 
   const totalInscritos = equipos.reduce((acc, e) => acc + e.inscritos, 0);
   const maxInscritos = Math.max(0, ...equipos.map((e) => e.inscritos));
@@ -133,39 +150,70 @@ export default function HomeContent({ initialEquipos, initialInscritos, initialC
         </div>
       </section>
 
-      {partidos.length > 0 && (
+      {scheduleItems.length > 0 && (
         <section className="section" style={{ paddingTop: 0 }}>
           <div className="container">
             <h2>Cronograma</h2>
-            <p className="lead">Así se organizará la competencia.</p>
+            <p className="lead">Así se organizará el día del evento.</p>
             <div className="schedule-list">
-              {partidos.map((p) => (
-                <div className="schedule-item" key={p.id}>
-                  <div className="schedule-time">
-                    <span className="schedule-time-main">
-                      {new Date(p.hora_inicio).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
-                    </span>
-                    <span className="schedule-time-sub">
-                      {new Date(p.hora_inicio).toLocaleDateString("es-MX", { day: "2-digit", month: "short" })}
-                    </span>
-                  </div>
-                  {p.juego_imagen && (
-                    <img src={p.juego_imagen} alt={p.juego_nombre} className="schedule-juego-img" />
-                  )}
-                  <div className="schedule-info">
-                    <span className="schedule-juego">{p.juego_nombre}</span>
-                    <div className="schedule-vs">
-                      <span className="partido-equipo" style={{ "--team-color": p.equipo_a_color }}>
-                        {p.equipo_a_nombre}
+              {scheduleItems.map((item) =>
+                item.tipo === "partido" ? (
+                  <div className="schedule-item" key={`partido-${item.id}`}>
+                    <div className="schedule-time">
+                      <span className="schedule-time-main">
+                        {new Date(item.hora_inicio).toLocaleTimeString("es-MX", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </span>
-                      <span className="partido-vs-label">VS</span>
-                      <span className="partido-equipo" style={{ "--team-color": p.equipo_b_color }}>
-                        {p.equipo_b_nombre}
+                      <span className="schedule-time-sub">
+                        {new Date(item.hora_inicio).toLocaleDateString("es-MX", { day: "2-digit", month: "short" })}
                       </span>
                     </div>
+                    {item.juego_imagen && (
+                      <img src={item.juego_imagen} alt={item.juego_nombre} className="schedule-juego-img" />
+                    )}
+                    <div className="schedule-info">
+                      <span className="schedule-juego">{item.juego_nombre}</span>
+                      <div className="schedule-vs">
+                        <span className="partido-equipo" style={{ "--team-color": item.equipo_a_color }}>
+                          {item.equipo_a_nombre}
+                        </span>
+                        <span className="partido-vs-label">VS</span>
+                        <span className="partido-equipo" style={{ "--team-color": item.equipo_b_color }}>
+                          {item.equipo_b_nombre}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ) : (
+                  <div className="schedule-item schedule-item-actividad" key={`actividad-${item.id}`}>
+                    <div className="schedule-time">
+                      <span className="schedule-time-main">
+                        {new Date(item.hora_inicio).toLocaleTimeString("es-MX", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                      <span className="schedule-time-sub">
+                        {new Date(item.hora_inicio).toLocaleDateString("es-MX", { day: "2-digit", month: "short" })}
+                      </span>
+                    </div>
+                    <div className="schedule-info">
+                      <span className="schedule-juego">{item.nombre}</span>
+                      {item.hora_fin && (
+                        <span className="schedule-actividad-fin">
+                          hasta las{" "}
+                          {new Date(item.hora_fin).toLocaleTimeString("es-MX", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )
+              )}
             </div>
           </div>
         </section>

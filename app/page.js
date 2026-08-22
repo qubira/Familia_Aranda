@@ -44,12 +44,20 @@ async function getPartidos() {
   return rows;
 }
 
+async function getActividades() {
+  const rows = await sql`
+    SELECT id, nombre, hora_inicio, hora_fin FROM actividades ORDER BY hora_inicio ASC
+  `;
+  return rows;
+}
+
 export default async function Home() {
-  const [equipos, inscritos, config, partidos] = await Promise.all([
+  const [equipos, inscritos, config, partidos, actividades] = await Promise.all([
     getEquipos(),
     getInscritos(),
     getConfig(),
     getPartidos(),
+    getActividades(),
   ]);
 
   return (
@@ -59,6 +67,7 @@ export default async function Home() {
         initialInscritos={inscritos}
         initialConfig={config}
         initialPartidos={partidos}
+        initialActividades={actividades}
       />
 
       <section className="section" style={{ paddingTop: 0 }}>

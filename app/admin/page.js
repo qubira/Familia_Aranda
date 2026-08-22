@@ -11,6 +11,7 @@ const emptyEditForm = {
 };
 
 const emptyPartidoForm = { juegoId: "", equipoAId: "", equipoBId: "", horaInicio: "", horaFin: "" };
+const emptyActividadForm = { nombre: "", horaInicio: "", horaFin: "" };
 
 function toDatetimeLocalValue(iso) {
   if (!iso) return "";
@@ -82,6 +83,17 @@ export default function AdminPage() {
   const [savingPartidoEdit, setSavingPartidoEdit] = useState(false);
   const [deletingPartidoId, setDeletingPartidoId] = useState(null);
 
+  const [actividades, setActividades] = useState([]);
+  const [showNewActividadForm, setShowNewActividadForm] = useState(false);
+  const [newActividadForm, setNewActividadForm] = useState(emptyActividadForm);
+  const [newActividadError, setNewActividadError] = useState("");
+  const [creatingActividad, setCreatingActividad] = useState(false);
+  const [editingActividadId, setEditingActividadId] = useState(null);
+  const [actividadEditForm, setActividadEditForm] = useState(emptyActividadForm);
+  const [actividadEditError, setActividadEditError] = useState("");
+  const [savingActividadEdit, setSavingActividadEdit] = useState(false);
+  const [deletingActividadId, setDeletingActividadId] = useState(null);
+
   const [configForm, setConfigForm] = useState({ eventoNombre: "", eventoFecha: "", eventoSede: "" });
   const [savingConfig, setSavingConfig] = useState(false);
   const [configError, setConfigError] = useState("");
@@ -95,19 +107,22 @@ export default function AdminPage() {
       setLoading(false);
       return;
     }
-    const [inscripcionesData, equiposData, galeriaData, juegosData, partidosData, configData] = await Promise.all([
-      res.json(),
-      fetch("/api/equipos").then((r) => r.json()),
-      fetch("/api/admin/galeria").then((r) => r.json()),
-      fetch("/api/admin/juegos").then((r) => r.json()),
-      fetch("/api/admin/partidos").then((r) => r.json()),
-      fetch("/api/admin/config").then((r) => r.json()),
-    ]);
+    const [inscripcionesData, equiposData, galeriaData, juegosData, partidosData, actividadesData, configData] =
+      await Promise.all([
+        res.json(),
+        fetch("/api/equipos").then((r) => r.json()),
+        fetch("/api/admin/galeria").then((r) => r.json()),
+        fetch("/api/admin/juegos").then((r) => r.json()),
+        fetch("/api/admin/partidos").then((r) => r.json()),
+        fetch("/api/admin/actividades").then((r) => r.json()),
+        fetch("/api/admin/config").then((r) => r.json()),
+      ]);
     setInscripciones(inscripcionesData.inscripciones || []);
     setEquipos(equiposData.equipos || []);
     setGaleria(galeriaData.fotos || []);
     setJuegos(juegosData.juegos || []);
     setPartidos(partidosData.partidos || []);
+    setActividades(actividadesData.actividades || []);
     const cfg = configData.config || {};
     setConfigForm({
       eventoNombre: cfg.evento_nombre || "",
@@ -146,6 +161,7 @@ export default function AdminPage() {
     setGaleria([]);
     setJuegos([]);
     setPartidos([]);
+    setActividades([]);
   }
 
   async function handleLogoChange(equipoId, file) {
@@ -437,6 +453,99 @@ export default function AdminPage() {
     setPartidos((list) => list.filter((p) => p.id !== id));
     await fetch(`/api/admin/partidos/${id}`, { method: "DELETE" });
     setDeletingPartidoId(null);
+  }
+
+  async function handleCreateActividad(e) {
+    e.preventDefault();
+    setCreatingActividad(true);
+    setNewActividadError("");
+    const eventoFecha = configForm.eventoFecha ? configForm.eventoFecha.split("T")[0] : null;
+    if (!eventoFecha) {
+      setNewActividadError("Primero configura la fecha del evento en la pestaña Configuración.");
+      setCreatingActividad(false);
+      return;
+    }
+    try {
+      const res = await fetch("/api/admin/actividades", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre: newActividadForm.nombre,
+          horaInicio: `${eventoFecha}T${newActividadForm.horaInicio}`,
+          horaFin: newActividadForm.horaFin ? `${eventoFecha}T${newActividadForm.horaFin}` : null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setNewActividadError(data.error || "No se pudo crear la actividad.");
+        setCreatingActividad(false);
+        return;
+      }
+      const actividadesData = await fetch("/api/admin/actividades").then((r) => r.json());
+      setActividades(actividadesData.actividades || []);
+      setNewActividadForm(emptyActividadForm);
+      setShowNewActividadForm(false);
+    } catch {
+      setNewActividadError("No se pudo conectar con el servidor.");
+    }
+    setCreatingActividad(false);
+  }
+
+  function startActividadEdit(a) {
+    setEditingActividadId(a.id);
+    setActividadEditError("");
+    setActividadEditForm({
+      nombre: a.nombre,
+      horaInicio: toTimeValue(a.hora_inicio),
+      horaFin: toTimeValue(a.hora_fin),
+    });
+  }
+
+  function cancelActividadEdit() {
+    setEditingActividadId(null);
+    setActividadEditError("");
+  }
+
+  async function saveActividadEdit(id) {
+    setSavingActividadEdit(true);
+    setActividadEditError("");
+    const eventoFecha = configForm.eventoFecha ? configForm.eventoFecha.split("T")[0] : null;
+    if (!eventoFecha) {
+      setActividadEditError("Primero configura la fecha del evento en la pestaña Configuración.");
+      setSavingActividadEdit(false);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/admin/actividades/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre: actividadEditForm.nombre,
+          horaInicio: `${eventoFecha}T${actividadEditForm.horaInicio}`,
+          horaFin: actividadEditForm.horaFin ? `${eventoFecha}T${actividadEditForm.horaFin}` : null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setActividadEditError(data.error || "No se pudo guardar.");
+        setSavingActividadEdit(false);
+        return;
+      }
+      const actividadesData = await fetch("/api/admin/actividades").then((r) => r.json());
+      setActividades(actividadesData.actividades || []);
+      setEditingActividadId(null);
+    } catch {
+      setActividadEditError("No se pudo conectar con el servidor.");
+    }
+    setSavingActividadEdit(false);
+  }
+
+  async function handleDeleteActividad(id) {
+    if (!window.confirm("¿Eliminar esta actividad de la planificación?")) return;
+    setDeletingActividadId(id);
+    setActividades((list) => list.filter((a) => a.id !== id));
+    await fetch(`/api/admin/actividades/${id}`, { method: "DELETE" });
+    setDeletingActividadId(null);
   }
 
   async function handleSaveConfig(e) {
@@ -743,7 +852,7 @@ export default function AdminPage() {
     { key: "inscripciones", label: "Inscripciones", icon: "📝", badge: inscripciones.length },
     { key: "equipos", label: "Equipos", icon: "🎽" },
     { key: "juegos", label: "Juegos", icon: "🎮", badge: juegos.length },
-    { key: "planificacion", label: "Planificación", icon: "📅", badge: partidos.length },
+    { key: "planificacion", label: "Planificación", icon: "📅", badge: partidos.length + actividades.length },
     { key: "configuracion", label: "Configuración", icon: "⚙️" },
     { key: "galeria", label: "Galería", icon: "📸", badge: galeria.length },
   ];
@@ -1305,17 +1414,13 @@ export default function AdminPage() {
               <>
               {!configForm.eventoFecha ? (
                 <p className="empty-chart">
-                  Primero configura la fecha del evento en la pestaña "Configuración". Todos los partidos se
-                  programan a una hora de ese mismo día.
-                </p>
-              ) : juegosConfirmados.length === 0 ? (
-                <p className="empty-chart">
-                  Primero confirma al menos un juego en la pestaña "Juegos" para poder planificar partidos.
+                  Primero configura la fecha del evento en la pestaña "Configuración". Todo lo programado se
+                  ubica a una hora de ese mismo día.
                 </p>
               ) : (
                 <>
                 <p className="hint" style={{ marginBottom: 16 }}>
-                  📅 Todos los partidos serán el{" "}
+                  📅 Todo lo programado será el{" "}
                   {new Date(`${configForm.eventoFecha.split("T")[0]}T00:00`).toLocaleDateString("es-MX", {
                     day: "numeric",
                     month: "long",
@@ -1323,7 +1428,13 @@ export default function AdminPage() {
                   })}
                   .
                 </p>
-                {!showNewPartidoForm ? (
+
+                <h3 style={{ marginTop: 0 }}>🏐 Partidos</h3>
+                {juegosConfirmados.length === 0 ? (
+                  <p className="empty-chart">
+                    Primero confirma al menos un juego en la pestaña "Juegos" para poder planificar partidos.
+                  </p>
+                ) : !showNewPartidoForm ? (
                   <button
                     className="btn btn-primary"
                     style={{ marginBottom: 20 }}
@@ -1547,6 +1658,183 @@ export default function AdminPage() {
                           onClick={() => handleDeletePartido(p.id)}
                         >
                           {deletingPartidoId === p.id ? "..." : "Eliminar"}
+                        </button>
+                      </div>
+                    </div>
+                  )
+                )}
+              </div>
+
+              <h3>🕒 Actividades generales</h3>
+              <p className="hint" style={{ marginBottom: 16 }}>
+                Entrada, almuerzo, salida u otra actividad sin equipos ni juego asociado.
+              </p>
+
+              {!showNewActividadForm ? (
+                <div className="row-actions" style={{ marginBottom: 20, flexWrap: "wrap" }}>
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                      setNewActividadForm({ ...emptyActividadForm, nombre: "🚪 Entrada" });
+                      setShowNewActividadForm(true);
+                    }}
+                  >
+                    + Entrada
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                      setNewActividadForm({ ...emptyActividadForm, nombre: "🍽️ Almuerzo" });
+                      setShowNewActividadForm(true);
+                    }}
+                  >
+                    + Almuerzo
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                      setNewActividadForm({ ...emptyActividadForm, nombre: "🏁 Salida" });
+                      setShowNewActividadForm(true);
+                    }}
+                  >
+                    + Salida
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                      setNewActividadForm(emptyActividadForm);
+                      setShowNewActividadForm(true);
+                    }}
+                  >
+                    + Otra actividad
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleCreateActividad} className="partido-form">
+                  {newActividadError && <div className="alert alert-error">{newActividadError}</div>}
+                  <div className="form-group">
+                    <label>Nombre</label>
+                    <input
+                      value={newActividadForm.nombre}
+                      onChange={(e) => setNewActividadForm((f) => ({ ...f, nombre: e.target.value }))}
+                      maxLength={150}
+                      required
+                      autoFocus
+                    />
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Hora de inicio</label>
+                      <input
+                        type="time"
+                        value={newActividadForm.horaInicio}
+                        onChange={(e) => setNewActividadForm((f) => ({ ...f, horaInicio: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Hora de fin (opcional)</label>
+                      <input
+                        type="time"
+                        value={newActividadForm.horaFin}
+                        onChange={(e) => setNewActividadForm((f) => ({ ...f, horaFin: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div className="row-actions">
+                    <button type="submit" className="btn-small btn-save" disabled={creatingActividad}>
+                      {creatingActividad ? "..." : "Guardar"}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-small btn-cancel"
+                      disabled={creatingActividad}
+                      onClick={() => {
+                        setShowNewActividadForm(false);
+                        setNewActividadError("");
+                        setNewActividadForm(emptyActividadForm);
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {actividadEditError && <div className="alert alert-error">{actividadEditError}</div>}
+
+              <div className="partidos-list">
+                {actividades.length === 0 && <p className="empty-chart">Aún no hay actividades agregadas.</p>}
+                {actividades.map((a) =>
+                  editingActividadId === a.id ? (
+                    <form
+                      key={a.id}
+                      className="partido-form"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        saveActividadEdit(a.id);
+                      }}
+                    >
+                      <div className="form-group">
+                        <label>Nombre</label>
+                        <input
+                          value={actividadEditForm.nombre}
+                          onChange={(e) => setActividadEditForm((f) => ({ ...f, nombre: e.target.value }))}
+                          maxLength={150}
+                          required
+                        />
+                      </div>
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label>Hora de inicio</label>
+                          <input
+                            type="time"
+                            value={actividadEditForm.horaInicio}
+                            onChange={(e) => setActividadEditForm((f) => ({ ...f, horaInicio: e.target.value }))}
+                            required
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Hora de fin (opcional)</label>
+                          <input
+                            type="time"
+                            value={actividadEditForm.horaFin}
+                            onChange={(e) => setActividadEditForm((f) => ({ ...f, horaFin: e.target.value }))}
+                          />
+                        </div>
+                      </div>
+                      <div className="row-actions">
+                        <button type="submit" className="btn-small btn-save" disabled={savingActividadEdit}>
+                          {savingActividadEdit ? "..." : "Guardar"}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-small btn-cancel"
+                          onClick={cancelActividadEdit}
+                          disabled={savingActividadEdit}
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <div className="partido-card" key={a.id}>
+                      <div className="partido-juego">{a.nombre}</div>
+                      <div className="partido-hora">
+                        {new Date(a.hora_inicio).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
+                        {a.hora_fin &&
+                          ` – ${new Date(a.hora_fin).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}`}
+                      </div>
+                      <div className="row-actions">
+                        <button className="btn-small btn-edit" onClick={() => startActividadEdit(a)}>
+                          Editar
+                        </button>
+                        <button
+                          className="btn-small btn-delete"
+                          disabled={deletingActividadId === a.id}
+                          onClick={() => handleDeleteActividad(a.id)}
+                        >
+                          {deletingActividadId === a.id ? "..." : "Eliminar"}
                         </button>
                       </div>
                     </div>

@@ -51,6 +51,15 @@ CREATE TABLE IF NOT EXISTS partidos (
   CHECK (hora_fin > hora_inicio)
 );
 
+CREATE TABLE IF NOT EXISTS actividades (
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(150) NOT NULL,
+  hora_inicio TIMESTAMPTZ NOT NULL,
+  hora_fin TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CHECK (hora_fin IS NULL OR hora_fin > hora_inicio)
+);
+
 CREATE TABLE IF NOT EXISTS configuracion (
   id INTEGER PRIMARY KEY DEFAULT 1,
   evento_nombre VARCHAR(200),

@@ -24,6 +24,8 @@ export const config = {
     "/api/admin/juegos/:path*",
     "/api/admin/partidos",
     "/api/admin/partidos/:path*",
+    "/api/admin/actividades",
+    "/api/admin/actividades/:path*",
     "/api/admin/config",
   ],
 };

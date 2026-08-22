@@ -286,6 +286,19 @@ h3 {
   flex-wrap: wrap;
 }
 
+.schedule-item-actividad {
+  background: color-mix(in srgb, var(--field) 6%, var(--card));
+  border-color: color-mix(in srgb, var(--field) 30%, var(--border));
+}
+
+.schedule-actividad-fin {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
 .btn {
   display: inline-block;
   padding: 15px 36px;
