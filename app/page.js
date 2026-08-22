@@ -16,13 +16,18 @@ async function getEquipos() {
 export default async function Home() {
   const equipos = await getEquipos();
   const totalInscritos = equipos.reduce((acc, e) => acc + e.inscritos, 0);
+  const maxInscritos = Math.max(0, ...equipos.map((e) => e.inscritos));
 
   return (
     <main>
       <section className="hero">
         <div className="container">
-          <span className="badge">Evento Deportivo Familiar</span>
-          <h1>Evento Deportivo Familiar Aranda 2026</h1>
+          <span className="badge">🏆 Evento Deportivo Familiar</span>
+          <h1>
+            Evento Deportivo
+            <br />
+            Familiar <span className="accent">Aranda</span> 2026
+          </h1>
           <p className="subtitle">
             Un día de deporte, competencia y unión familiar. Cada rama de la
             familia forma su propio equipo y compite por el trofeo del año.
@@ -33,10 +38,12 @@ export default async function Home() {
             <span>👨‍👩‍👧‍👦 {totalInscritos} inscritos hasta ahora</span>
           </div>
           <a href="/inscripcion" className="btn btn-accent">
-            Inscribirme ahora
+            ⚡ Inscribirme ahora
           </a>
         </div>
       </section>
+
+      <div className="section-divider" />
 
       <section className="section">
         <div className="container">
@@ -49,9 +56,12 @@ export default async function Home() {
             {equipos.map((equipo) => (
               <div
                 key={equipo.id}
-                className="team-card"
+                className={`team-card${equipo.inscritos > 0 && equipo.inscritos === maxInscritos ? " leader" : ""}`}
                 style={{ "--team-color": equipo.color }}
               >
+                {equipo.inscritos > 0 && equipo.inscritos === maxInscritos && (
+                  <span className="leader-crown">👑 Líder</span>
+                )}
                 {equipo.logo_url ? (
                   <img src={equipo.logo_url} alt={equipo.nombre} className="team-logo" />
                 ) : (
@@ -70,7 +80,7 @@ export default async function Home() {
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="container" style={{ textAlign: "center" }}>
           <a href="/inscripcion" className="btn btn-primary">
-            Quiero inscribir a mi familiar
+            🏅 Quiero inscribir a mi familiar
           </a>
         </div>
       </section>

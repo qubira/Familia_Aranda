@@ -114,7 +114,7 @@ export default function AdminPage() {
       <main className="section">
         <div className="container">
           <div className="admin-login">
-            <h2 style={{ textAlign: "center", marginTop: 0 }}>Panel de organizadores</h2>
+            <h2 style={{ textAlign: "center", marginTop: 0 }}>🏆 Panel de organizadores</h2>
             {loginError && <div className="alert alert-error">{loginError}</div>}
             <form onSubmit={handleLogin}>
               <div className="form-group">

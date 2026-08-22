@@ -16,7 +16,7 @@ export default async function GaleriaPage() {
   return (
     <main className="section">
       <div className="container">
-        <h2>Galería del evento</h2>
+        <h2>📸 Galería del evento</h2>
         <p className="lead">Los mejores momentos del Evento Deportivo Familiar Aranda.</p>
 
         {fotos.length === 0 ? (

@@ -94,7 +94,7 @@ export default function InscripcionPage() {
   return (
     <main className="section">
       <div className="container">
-        <h2>Formulario de inscripción</h2>
+        <h2>🏃 Formulario de inscripción</h2>
         <p className="lead">
           Indica tus datos y el equipo que representarás en el Evento Deportivo
           Familiar.
@@ -214,7 +214,7 @@ export default function InscripcionPage() {
               style={{ width: "100%" }}
               disabled={status.state === "loading" || loadingEquipos || foto.uploading}
             >
-              {status.state === "loading" ? "Enviando..." : "Confirmar inscripción"}
+              {status.state === "loading" ? "Enviando..." : "🏁 Confirmar inscripción"}
             </button>
           </form>
         </div>
