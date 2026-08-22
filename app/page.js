@@ -73,8 +73,8 @@ export default async function Home() {
 
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="container" style={{ textAlign: "center" }}>
-          <a href="/inscripcion" className="btn btn-secondary">
-            🙋 Quiero inscribir a mi familiar
+          <a href="/inscripcion" className="btn btn-primary">
+            🏅 Quiero inscribir a mi familiar
           </a>
         </div>
       </section>
