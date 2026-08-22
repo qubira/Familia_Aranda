@@ -27,6 +27,14 @@ function toTimeValue(iso) {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+// Combina una fecha (YYYY-MM-DD) y una hora (HH:mm) interpretadas en la
+// zona horaria del navegador, y devuelve el instante UTC exacto en ISO.
+// Esto evita que el servidor (que corre en UTC) reinterprete la hora.
+function combineLocalToISO(dateStr, timeStr) {
+  if (!dateStr || !timeStr) return null;
+  return new Date(`${dateStr}T${timeStr}`).toISOString();
+}
+
 export default function AdminPage() {
   const [authState, setAuthState] = useState("checking"); // checking | out | in
   const [password, setPassword] = useState("");
@@ -376,8 +384,8 @@ export default function AdminPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...newPartidoForm,
-          horaInicio: `${eventoFecha}T${newPartidoForm.horaInicio}`,
-          horaFin: `${eventoFecha}T${newPartidoForm.horaFin}`,
+          horaInicio: combineLocalToISO(eventoFecha, newPartidoForm.horaInicio),
+          horaFin: combineLocalToISO(eventoFecha, newPartidoForm.horaFin),
         }),
       });
       const data = await res.json();
@@ -428,8 +436,8 @@ export default function AdminPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...partidoEditForm,
-          horaInicio: `${eventoFecha}T${partidoEditForm.horaInicio}`,
-          horaFin: `${eventoFecha}T${partidoEditForm.horaFin}`,
+          horaInicio: combineLocalToISO(eventoFecha, partidoEditForm.horaInicio),
+          horaFin: combineLocalToISO(eventoFecha, partidoEditForm.horaFin),
         }),
       });
       const data = await res.json();
@@ -471,8 +479,8 @@ export default function AdminPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           nombre: newActividadForm.nombre,
-          horaInicio: `${eventoFecha}T${newActividadForm.horaInicio}`,
-          horaFin: newActividadForm.horaFin ? `${eventoFecha}T${newActividadForm.horaFin}` : null,
+          horaInicio: combineLocalToISO(eventoFecha, newActividadForm.horaInicio),
+          horaFin: newActividadForm.horaFin ? combineLocalToISO(eventoFecha, newActividadForm.horaFin) : null,
         }),
       });
       const data = await res.json();
@@ -521,8 +529,8 @@ export default function AdminPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           nombre: actividadEditForm.nombre,
-          horaInicio: `${eventoFecha}T${actividadEditForm.horaInicio}`,
-          horaFin: actividadEditForm.horaFin ? `${eventoFecha}T${actividadEditForm.horaFin}` : null,
+          horaInicio: combineLocalToISO(eventoFecha, actividadEditForm.horaInicio),
+          horaFin: actividadEditForm.horaFin ? combineLocalToISO(eventoFecha, actividadEditForm.horaFin) : null,
         }),
       });
       const data = await res.json();
@@ -557,7 +565,10 @@ export default function AdminPage() {
       const res = await fetch("/api/admin/config", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(configForm),
+        body: JSON.stringify({
+          ...configForm,
+          eventoFecha: configForm.eventoFecha ? new Date(configForm.eventoFecha).toISOString() : "",
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
