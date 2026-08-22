@@ -26,7 +26,8 @@ export async function PATCH(request, { params }) {
   const [updated] = await sql`
     UPDATE partidos
     SET juego_id = ${data.juegoId}, equipo_a_id = ${data.equipoAId}, equipo_b_id = ${data.equipoBId},
-        hora_inicio = ${data.horaInicio.toISOString()}, hora_fin = ${data.horaFin.toISOString()}
+        hora_inicio = ${data.horaInicio.toISOString()}, hora_fin = ${data.horaFin.toISOString()},
+        ronda = ${data.ronda}, ganador_id = ${data.ganadorId}
     WHERE id = ${id}
     RETURNING id
   `;

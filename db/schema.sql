@@ -46,9 +46,13 @@ CREATE TABLE IF NOT EXISTS partidos (
   equipo_b_id INTEGER NOT NULL REFERENCES equipos(id),
   hora_inicio TIMESTAMPTZ NOT NULL,
   hora_fin TIMESTAMPTZ NOT NULL,
+  ronda VARCHAR(20),
+  ganador_id INTEGER REFERENCES equipos(id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   CHECK (equipo_a_id <> equipo_b_id),
-  CHECK (hora_fin > hora_inicio)
+  CHECK (hora_fin > hora_inicio),
+  CHECK (ronda IS NULL OR ronda IN ('semifinal', 'final')),
+  CHECK (ganador_id IS NULL OR ganador_id = equipo_a_id OR ganador_id = equipo_b_id)
 );
 
 CREATE TABLE IF NOT EXISTS actividades (
@@ -77,6 +81,8 @@ ALTER TABLE inscripciones ALTER COLUMN email DROP NOT NULL;
 ALTER TABLE inscripciones ALTER COLUMN telefono DROP NOT NULL;
 ALTER TABLE juegos ADD COLUMN IF NOT EXISTS imagen_url TEXT;
 ALTER TABLE juegos ADD COLUMN IF NOT EXISTS imagen_public_id TEXT;
+ALTER TABLE partidos ADD COLUMN IF NOT EXISTS ronda VARCHAR(20);
+ALTER TABLE partidos ADD COLUMN IF NOT EXISTS ganador_id INTEGER REFERENCES equipos(id);
 
 CREATE INDEX IF NOT EXISTS idx_inscripciones_equipo ON inscripciones(equipo_id);
 

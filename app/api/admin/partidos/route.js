@@ -4,7 +4,7 @@ import { validatePartidoInput } from "@/lib/partidoValidation";
 
 export async function GET() {
   const partidos = await sql`
-    SELECT p.id, p.hora_inicio, p.hora_fin,
+    SELECT p.id, p.hora_inicio, p.hora_fin, p.ronda, p.ganador_id,
            j.id AS juego_id, j.nombre AS juego_nombre,
            ea.id AS equipo_a_id, ea.nombre AS equipo_a_nombre, ea.color AS equipo_a_color,
            eb.id AS equipo_b_id, eb.nombre AS equipo_b_nombre, eb.color AS equipo_b_color
@@ -40,8 +40,8 @@ export async function POST(request) {
   }
 
   const [partido] = await sql`
-    INSERT INTO partidos (juego_id, equipo_a_id, equipo_b_id, hora_inicio, hora_fin)
-    VALUES (${data.juegoId}, ${data.equipoAId}, ${data.equipoBId}, ${data.horaInicio.toISOString()}, ${data.horaFin.toISOString()})
+    INSERT INTO partidos (juego_id, equipo_a_id, equipo_b_id, hora_inicio, hora_fin, ronda, ganador_id)
+    VALUES (${data.juegoId}, ${data.equipoAId}, ${data.equipoBId}, ${data.horaInicio.toISOString()}, ${data.horaFin.toISOString()}, ${data.ronda}, ${data.ganadorId})
     RETURNING id
   `;
 

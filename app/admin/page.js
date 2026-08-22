@@ -10,7 +10,15 @@ const emptyEditForm = {
   fotoUrl: "",
 };
 
-const emptyPartidoForm = { juegoId: "", equipoAId: "", equipoBId: "", horaInicio: "", horaFin: "" };
+const emptyPartidoForm = {
+  juegoId: "",
+  equipoAId: "",
+  equipoBId: "",
+  horaInicio: "",
+  horaFin: "",
+  ronda: "",
+  ganadorId: "",
+};
 const emptyActividadForm = { nombre: "", horaInicio: "", horaFin: "" };
 
 function toDatetimeLocalValue(iso) {
@@ -413,6 +421,8 @@ export default function AdminPage() {
       equipoBId: String(p.equipo_b_id),
       horaInicio: toTimeValue(p.hora_inicio),
       horaFin: toTimeValue(p.hora_fin),
+      ronda: p.ronda || "",
+      ganadorId: p.ganador_id ? String(p.ganador_id) : "",
     });
   }
 
@@ -1523,6 +1533,37 @@ export default function AdminPage() {
                         />
                       </div>
                     </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Ronda (cuadro de eliminación)</label>
+                        <select
+                          value={newPartidoForm.ronda}
+                          onChange={(e) => setNewPartidoForm((f) => ({ ...f, ronda: e.target.value, ganadorId: "" }))}
+                        >
+                          <option value="">No es parte del cuadro</option>
+                          <option value="semifinal">Semifinal</option>
+                          <option value="final">Final</option>
+                        </select>
+                      </div>
+                      {newPartidoForm.ronda && newPartidoForm.equipoAId && newPartidoForm.equipoBId && (
+                        <div className="form-group">
+                          <label>Ganador (si ya se jugó)</label>
+                          <select
+                            value={newPartidoForm.ganadorId}
+                            onChange={(e) => setNewPartidoForm((f) => ({ ...f, ganadorId: e.target.value }))}
+                          >
+                            <option value="">Aún sin definir</option>
+                            {equipos
+                              .filter((eq) => String(eq.id) === newPartidoForm.equipoAId || String(eq.id) === newPartidoForm.equipoBId)
+                              .map((eq) => (
+                                <option key={eq.id} value={eq.id}>
+                                  {eq.nombre}
+                                </option>
+                              ))}
+                          </select>
+                        </div>
+                      )}
+                    </div>
                     <div className="row-actions">
                       <button type="submit" className="btn-small btn-save" disabled={creatingPartido}>
                         {creatingPartido ? "..." : "Crear partido"}
@@ -1623,6 +1664,43 @@ export default function AdminPage() {
                           />
                         </div>
                       </div>
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label>Ronda (cuadro de eliminación)</label>
+                          <select
+                            value={partidoEditForm.ronda}
+                            onChange={(e) =>
+                              setPartidoEditForm((f) => ({ ...f, ronda: e.target.value, ganadorId: "" }))
+                            }
+                          >
+                            <option value="">No es parte del cuadro</option>
+                            <option value="semifinal">Semifinal</option>
+                            <option value="final">Final</option>
+                          </select>
+                        </div>
+                        {partidoEditForm.ronda && (
+                          <div className="form-group">
+                            <label>Ganador (si ya se jugó)</label>
+                            <select
+                              value={partidoEditForm.ganadorId}
+                              onChange={(e) => setPartidoEditForm((f) => ({ ...f, ganadorId: e.target.value }))}
+                            >
+                              <option value="">Aún sin definir</option>
+                              {equipos
+                                .filter(
+                                  (eq) =>
+                                    String(eq.id) === partidoEditForm.equipoAId ||
+                                    String(eq.id) === partidoEditForm.equipoBId
+                                )
+                                .map((eq) => (
+                                  <option key={eq.id} value={eq.id}>
+                                    {eq.nombre}
+                                  </option>
+                                ))}
+                            </select>
+                          </div>
+                        )}
+                      </div>
                       <div className="row-actions">
                         <button type="submit" className="btn-small btn-save" disabled={savingPartidoEdit}>
                           {savingPartidoEdit ? "..." : "Guardar"}
@@ -1639,14 +1717,23 @@ export default function AdminPage() {
                     </form>
                   ) : (
                     <div className="partido-card" key={p.id}>
-                      <div className="partido-juego">{p.juego_nombre}</div>
+                      <div className="partido-juego">
+                        {p.juego_nombre}
+                        {p.ronda && (
+                          <span className="partido-ronda-badge">
+                            {p.ronda === "semifinal" ? "🥉 Semifinal" : "🏆 Final"}
+                          </span>
+                        )}
+                      </div>
                       <div className="partido-vs">
                         <span className="partido-equipo" style={{ "--team-color": p.equipo_a_color }}>
                           {p.equipo_a_nombre}
+                          {p.ganador_id === p.equipo_a_id && " ✓"}
                         </span>
                         <span className="partido-vs-label">VS</span>
                         <span className="partido-equipo" style={{ "--team-color": p.equipo_b_color }}>
                           {p.equipo_b_nombre}
+                          {p.ganador_id === p.equipo_b_id && " ✓"}
                         </span>
                       </div>
                       <div className="partido-hora">

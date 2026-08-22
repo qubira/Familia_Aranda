@@ -3,10 +3,11 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   const partidos = await sql`
-    SELECT p.id, p.hora_inicio, p.hora_fin,
+    SELECT p.id, p.hora_inicio, p.hora_fin, p.ronda,
            j.nombre AS juego_nombre, j.imagen_url AS juego_imagen,
-           ea.nombre AS equipo_a_nombre, ea.color AS equipo_a_color,
-           eb.nombre AS equipo_b_nombre, eb.color AS equipo_b_color
+           ea.id AS equipo_a_id, ea.nombre AS equipo_a_nombre, ea.color AS equipo_a_color,
+           eb.id AS equipo_b_id, eb.nombre AS equipo_b_nombre, eb.color AS equipo_b_color,
+           p.ganador_id
     FROM partidos p
     JOIN juegos j ON j.id = p.juego_id
     JOIN equipos ea ON ea.id = p.equipo_a_id

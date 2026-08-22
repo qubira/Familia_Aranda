@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Countdown from "@/components/Countdown";
+import Bracket from "@/components/Bracket";
 
 const POLL_INTERVAL_MS = 15000;
 
@@ -215,6 +216,16 @@ export default function HomeContent({
                 )
               )}
             </div>
+          </div>
+        </section>
+      )}
+
+      {partidos.some((p) => p.ronda) && (
+        <section className="section" style={{ paddingTop: 0 }}>
+          <div className="container">
+            <h2>Cuadro de eliminación directa</h2>
+            <p className="lead">Quién avanza y quién se corona campeón.</p>
+            <Bracket partidos={partidos} />
           </div>
         </section>
       )}
