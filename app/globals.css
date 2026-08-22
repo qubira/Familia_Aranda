@@ -68,7 +68,11 @@ h3 {
 /* Hero */
 .hero {
   position: relative;
-  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+  background-image: linear-gradient(135deg, rgba(11, 29, 77, 0.9) 0%, rgba(22, 50, 125, 0.85) 100%),
+    url("/img/hero-stadium.jpg");
+  background-size: cover;
+  background-position: center 35%;
+  background-repeat: no-repeat;
   color: white;
   padding: 76px 0 110px;
   text-align: center;
