@@ -1,6 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+const emptyEditForm = {
+  nombreCompleto: "",
+  email: "",
+  telefono: "",
+  categoria: "adulto",
+  edad: "",
+  equipoId: "",
+};
 
 export default function AdminPage() {
   const [authState, setAuthState] = useState("checking"); // checking | out | in
@@ -13,6 +22,13 @@ export default function AdminPage() {
   const [logoUploading, setLogoUploading] = useState(null);
   const [galeriaUploading, setGaleriaUploading] = useState(false);
   const [galeriaDescripcion, setGaleriaDescripcion] = useState("");
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterEquipoId, setFilterEquipoId] = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState(emptyEditForm);
+  const [editError, setEditError] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   async function loadAll() {
     setLoading(true);
@@ -99,6 +115,72 @@ export default function AdminPage() {
     await fetch(`/api/admin/galeria/${id}`, { method: "DELETE" });
   }
 
+  function startEdit(i) {
+    setEditingId(i.id);
+    setEditError("");
+    setEditForm({
+      nombreCompleto: i.nombre_completo,
+      email: i.email,
+      telefono: i.telefono,
+      categoria: i.categoria,
+      edad: i.edad ?? "",
+      equipoId: String(equipos.find((e) => e.nombre === i.equipo)?.id || ""),
+    });
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditForm(emptyEditForm);
+    setEditError("");
+  }
+
+  async function saveEdit(id) {
+    setSavingEdit(true);
+    setEditError("");
+    try {
+      const res = await fetch(`/api/admin/inscripciones/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...editForm,
+          equipoId: Number(editForm.equipoId),
+          edad: editForm.edad === "" ? null : Number(editForm.edad),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setEditError(data.error || "No se pudo guardar.");
+        setSavingEdit(false);
+        return;
+      }
+      await loadAll();
+      cancelEdit();
+    } catch {
+      setEditError("No se pudo conectar con el servidor.");
+    }
+    setSavingEdit(false);
+  }
+
+  async function handleDeleteInscripcion(id, nombre) {
+    if (!window.confirm(`¿Eliminar la inscripción de ${nombre}? Esta acción no se puede deshacer.`)) {
+      return;
+    }
+    setInscripciones((list) => list.filter((i) => i.id !== id));
+    await fetch(`/api/admin/inscripciones/${id}`, { method: "DELETE" });
+  }
+
+  const filteredInscripciones = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return inscripciones.filter((i) => {
+      const matchesEquipo = !filterEquipoId || String(i.equipo) === filterEquipoId;
+      const matchesTerm =
+        !term ||
+        i.nombre_completo.toLowerCase().includes(term) ||
+        i.email.toLowerCase().includes(term);
+      return matchesEquipo && matchesTerm;
+    });
+  }, [inscripciones, searchTerm, filterEquipoId]);
+
   if (authState === "checking") {
     return (
       <main className="section">
@@ -143,10 +225,23 @@ export default function AdminPage() {
     );
   }
 
-  const porEquipo = inscripciones.reduce((acc, i) => {
-    acc[i.equipo] = (acc[i.equipo] || 0) + 1;
+  const porEquipo = equipos.map((equipo) => ({
+    ...equipo,
+    count: inscripciones.filter((i) => i.equipo === equipo.nombre).length,
+  }));
+  const maxPorEquipo = Math.max(1, ...porEquipo.map((e) => e.count));
+
+  const ninos = inscripciones.filter((i) => i.categoria === "nino").length;
+  const adultos = inscripciones.filter((i) => i.categoria === "adulto").length;
+  const maxCategoria = Math.max(1, ninos, adultos);
+
+  const porDia = inscripciones.reduce((acc, i) => {
+    const dia = new Date(i.created_at).toLocaleDateString("es-MX", { day: "2-digit", month: "short" });
+    acc[dia] = (acc[dia] || 0) + 1;
     return acc;
   }, {});
+  const diasOrdenados = Object.keys(porDia);
+  const maxPorDia = Math.max(1, ...Object.values(porDia));
 
   return (
     <main className="section">
@@ -168,15 +263,104 @@ export default function AdminPage() {
         ) : (
           <>
             <div className="admin-section">
-              <h3>Inscripciones ({inscripciones.length})</h3>
-              <div className="admin-stats">
-                {Object.entries(porEquipo).map(([equipo, count]) => (
-                  <div className="stat-card" key={equipo}>
-                    <div className="num">{count}</div>
-                    <div className="label">{equipo}</div>
-                  </div>
-                ))}
+              <h3>📊 Dashboard</h3>
+              <div className="dashboard-charts">
+                <div className="chart-card">
+                  <h4>Inscritos por equipo</h4>
+                  {porEquipo.length === 0 ? (
+                    <p className="empty-chart">Sin datos todavía.</p>
+                  ) : (
+                    porEquipo.map((e) => (
+                      <div className="chart-bar-row" key={e.id}>
+                        <span className="chart-bar-label">{e.nombre}</span>
+                        <div className="chart-bar-track">
+                          <div
+                            className="chart-bar-fill"
+                            style={{
+                              width: `${(e.count / maxPorEquipo) * 100}%`,
+                              "--bar-color": e.color,
+                            }}
+                          />
+                        </div>
+                        <span className="chart-bar-value">{e.count}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className="chart-card">
+                  <h4>Niños vs. adultos</h4>
+                  {inscripciones.length === 0 ? (
+                    <p className="empty-chart">Sin datos todavía.</p>
+                  ) : (
+                    <>
+                      <div className="chart-bar-row">
+                        <span className="chart-bar-label">Niños</span>
+                        <div className="chart-bar-track">
+                          <div
+                            className="chart-bar-fill"
+                            style={{ width: `${(ninos / maxCategoria) * 100}%`, "--bar-color": "var(--field)" }}
+                          />
+                        </div>
+                        <span className="chart-bar-value">{ninos}</span>
+                      </div>
+                      <div className="chart-bar-row">
+                        <span className="chart-bar-label">Adultos</span>
+                        <div className="chart-bar-track">
+                          <div
+                            className="chart-bar-fill"
+                            style={{ width: `${(adultos / maxCategoria) * 100}%`, "--bar-color": "var(--navy)" }}
+                          />
+                        </div>
+                        <span className="chart-bar-value">{adultos}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <div className="chart-card">
+                  <h4>Inscripciones por día</h4>
+                  {diasOrdenados.length === 0 ? (
+                    <p className="empty-chart">Sin datos todavía.</p>
+                  ) : (
+                    <div className="day-chart">
+                      {diasOrdenados.map((dia) => (
+                        <div className="day-chart-col" key={dia}>
+                          <span className="day-chart-count">{porDia[dia]}</span>
+                          <div
+                            className="day-chart-bar"
+                            style={{ height: `${(porDia[dia] / maxPorDia) * 80}px` }}
+                          />
+                          <span className="day-chart-label">{dia}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
+            </div>
+
+            <div className="admin-section">
+              <h3>Inscripciones ({filteredInscripciones.length} de {inscripciones.length})</h3>
+
+              <div className="filter-bar">
+                <input
+                  type="text"
+                  placeholder="Buscar por nombre o email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <select value={filterEquipoId} onChange={(e) => setFilterEquipoId(e.target.value)}>
+                  <option value="">Todos los equipos</option>
+                  {equipos.map((eq) => (
+                    <option key={eq.id} value={eq.nombre}>
+                      {eq.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {editError && <div className="alert alert-error">{editError}</div>}
 
               <div className="table-wrap">
                 <table>
@@ -190,31 +374,111 @@ export default function AdminPage() {
                       <th>Categoría</th>
                       <th>Edad</th>
                       <th>Fecha</th>
+                      <th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {inscripciones.map((i) => (
-                      <tr key={i.id}>
-                        <td>
-                          {i.foto_url ? (
-                            <img src={i.foto_url} alt="" className="thumb" />
-                          ) : (
-                            "—"
-                          )}
-                        </td>
-                        <td>{i.equipo}</td>
-                        <td>{i.nombre_completo}</td>
-                        <td>{i.email}</td>
-                        <td>{i.telefono}</td>
-                        <td>{i.categoria === "nino" ? "Niño" : "Adulto"}</td>
-                        <td>{i.edad ?? "—"}</td>
-                        <td>{new Date(i.created_at).toLocaleString("es-MX")}</td>
-                      </tr>
-                    ))}
-                    {inscripciones.length === 0 && (
+                    {filteredInscripciones.map((i) =>
+                      editingId === i.id ? (
+                        <tr key={i.id}>
+                          <td>{i.foto_url ? <img src={i.foto_url} alt="" className="thumb" /> : "—"}</td>
+                          <td className="edit-cell">
+                            <select
+                              value={editForm.equipoId}
+                              onChange={(e) => setEditForm((f) => ({ ...f, equipoId: e.target.value }))}
+                            >
+                              {equipos.map((eq) => (
+                                <option key={eq.id} value={eq.id}>
+                                  {eq.nombre}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                          <td className="edit-cell">
+                            <input
+                              value={editForm.nombreCompleto}
+                              onChange={(e) => setEditForm((f) => ({ ...f, nombreCompleto: e.target.value }))}
+                            />
+                          </td>
+                          <td className="edit-cell">
+                            <input
+                              type="email"
+                              value={editForm.email}
+                              onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
+                            />
+                          </td>
+                          <td className="edit-cell">
+                            <input
+                              value={editForm.telefono}
+                              onChange={(e) => setEditForm((f) => ({ ...f, telefono: e.target.value }))}
+                            />
+                          </td>
+                          <td className="edit-cell">
+                            <select
+                              value={editForm.categoria}
+                              onChange={(e) => setEditForm((f) => ({ ...f, categoria: e.target.value }))}
+                            >
+                              <option value="adulto">Adulto</option>
+                              <option value="nino">Niño</option>
+                            </select>
+                          </td>
+                          <td className="edit-cell">
+                            <input
+                              type="number"
+                              min="0"
+                              max="120"
+                              value={editForm.edad}
+                              onChange={(e) => setEditForm((f) => ({ ...f, edad: e.target.value }))}
+                            />
+                          </td>
+                          <td>{new Date(i.created_at).toLocaleDateString("es-MX")}</td>
+                          <td>
+                            <div className="row-actions">
+                              <button
+                                className="btn-small btn-save"
+                                onClick={() => saveEdit(i.id)}
+                                disabled={savingEdit}
+                              >
+                                {savingEdit ? "..." : "Guardar"}
+                              </button>
+                              <button className="btn-small btn-cancel" onClick={cancelEdit} disabled={savingEdit}>
+                                Cancelar
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : (
+                        <tr key={i.id}>
+                          <td>{i.foto_url ? <img src={i.foto_url} alt="" className="thumb" /> : "—"}</td>
+                          <td>{i.equipo}</td>
+                          <td>{i.nombre_completo}</td>
+                          <td>{i.email}</td>
+                          <td>{i.telefono}</td>
+                          <td>{i.categoria === "nino" ? "Niño" : "Adulto"}</td>
+                          <td>{i.edad ?? "—"}</td>
+                          <td>{new Date(i.created_at).toLocaleString("es-MX")}</td>
+                          <td>
+                            <div className="row-actions">
+                              <button className="btn-small btn-edit" onClick={() => startEdit(i)}>
+                                Editar
+                              </button>
+                              <button
+                                className="btn-small btn-delete"
+                                onClick={() => handleDeleteInscripcion(i.id, i.nombre_completo)}
+                              >
+                                Eliminar
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    )}
+                    {filteredInscripciones.length === 0 && (
                       <tr>
-                        <td colSpan={8} style={{ textAlign: "center", color: "var(--muted)" }}>
-                          Aún no hay inscripciones.
+                        <td colSpan={9} style={{ textAlign: "center", color: "var(--muted)" }}>
+                          {inscripciones.length === 0
+                            ? "Aún no hay inscripciones."
+                            : "Ningún resultado con ese filtro."}
                         </td>
                       </tr>
                     )}

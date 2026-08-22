@@ -14,6 +14,7 @@ export async function proxy(request) {
 export const config = {
   matcher: [
     "/api/admin/inscripciones",
+    "/api/admin/inscripciones/:path*",
     "/api/admin/export",
     "/api/admin/equipos/:path*",
     "/api/admin/galeria",
