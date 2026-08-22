@@ -14,12 +14,22 @@ async function getEquipos() {
   return rows;
 }
 
+async function getInscritos() {
+  const rows = await sql`
+    SELECT i.id, i.nombre_completo, i.foto_url, e.nombre AS equipo, e.color AS equipo_color
+    FROM inscripciones i
+    JOIN equipos e ON e.id = i.equipo_id
+    ORDER BY i.created_at DESC
+  `;
+  return rows;
+}
+
 export default async function Home() {
-  const equipos = await getEquipos();
+  const [equipos, inscritos] = await Promise.all([getEquipos(), getInscritos()]);
 
   return (
     <main>
-      <HomeContent initialEquipos={equipos} />
+      <HomeContent initialEquipos={equipos} initialInscritos={inscritos} />
 
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="container" style={{ textAlign: "center" }}>

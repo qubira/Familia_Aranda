@@ -4,16 +4,34 @@ import { useEffect, useState } from "react";
 
 const POLL_INTERVAL_MS = 15000;
 
-export default function HomeContent({ initialEquipos }) {
+function getInitials(nombre) {
+  return nombre
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
+}
+
+export default function HomeContent({ initialEquipos, initialInscritos }) {
   const [equipos, setEquipos] = useState(initialEquipos);
+  const [inscritos, setInscritos] = useState(initialInscritos);
 
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
-        const res = await fetch("/api/equipos", { cache: "no-store" });
-        if (res.ok) {
-          const data = await res.json();
+        const [equiposRes, inscritosRes] = await Promise.all([
+          fetch("/api/equipos", { cache: "no-store" }),
+          fetch("/api/inscritos", { cache: "no-store" }),
+        ]);
+        if (equiposRes.ok) {
+          const data = await equiposRes.json();
           if (data.equipos) setEquipos(data.equipos);
+        }
+        if (inscritosRes.ok) {
+          const data = await inscritosRes.json();
+          if (data.inscritos) setInscritos(data.inscritos);
         }
       } catch {
         // Silently retry on the next interval tick.
@@ -86,6 +104,40 @@ export default function HomeContent({ initialEquipos }) {
           </div>
         </div>
       </section>
+
+      {inscritos.length > 0 && (
+        <section className="section" style={{ paddingTop: 0 }}>
+          <div className="container">
+            <h2>Participantes</h2>
+            <p className="lead">Quienes ya se inscribieron para competir.</p>
+            <div className="participants-grid">
+              {inscritos.map((p) => (
+                <div className="participant-card" key={p.id}>
+                  {p.foto_url ? (
+                    <img
+                      src={p.foto_url}
+                      alt={p.nombre_completo}
+                      className="participant-avatar"
+                      style={{ "--team-color": p.equipo_color }}
+                    />
+                  ) : (
+                    <div
+                      className="participant-avatar participant-avatar-placeholder"
+                      style={{ "--team-color": p.equipo_color }}
+                    >
+                      {getInitials(p.nombre_completo)}
+                    </div>
+                  )}
+                  <span className="participant-name">{p.nombre_completo}</span>
+                  <span className="participant-team" style={{ "--team-color": p.equipo_color }}>
+                    {p.equipo}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
     </>
   );
 }

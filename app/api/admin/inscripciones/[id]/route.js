@@ -18,6 +18,10 @@ export async function PATCH(request, { params }) {
     return NextResponse.json({ error }, { status: 400 });
   }
 
+  const fotoUrlRaw = String(body.fotoUrl || "").trim();
+  const cloudinaryPrefix = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/`;
+  const fotoUrl = fotoUrlRaw.startsWith(cloudinaryPrefix) ? fotoUrlRaw : null;
+
   const equipoExiste = await sql`SELECT id FROM equipos WHERE id = ${data.equipoId}`;
   if (equipoExiste.length === 0) {
     return NextResponse.json(
@@ -29,7 +33,7 @@ export async function PATCH(request, { params }) {
   const [updated] = await sql`
     UPDATE inscripciones
     SET nombre_completo = ${data.nombreCompleto}, categoria = ${data.categoria},
-        edad = ${data.edad}, equipo_id = ${data.equipoId}
+        edad = ${data.edad}, equipo_id = ${data.equipoId}, foto_url = ${fotoUrl}
     WHERE id = ${id}
     RETURNING id
   `;

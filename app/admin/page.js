@@ -7,6 +7,7 @@ const emptyEditForm = {
   categoria: "adulto",
   edad: "",
   equipoId: "",
+  fotoUrl: "",
 };
 
 export default function AdminPage() {
@@ -27,6 +28,7 @@ export default function AdminPage() {
   const [editForm, setEditForm] = useState(emptyEditForm);
   const [editError, setEditError] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+  const [editFotoUploading, setEditFotoUploading] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -214,6 +216,7 @@ export default function AdminPage() {
       categoria: i.categoria,
       edad: i.edad ?? "",
       equipoId: String(equipos.find((e) => e.nombre === i.equipo)?.id || ""),
+      fotoUrl: i.foto_url || "",
     });
   }
 
@@ -221,6 +224,25 @@ export default function AdminPage() {
     setEditingId(null);
     setEditForm(emptyEditForm);
     setEditError("");
+  }
+
+  async function handleEditFotoChange(file) {
+    if (!file) return;
+    setEditFotoUploading(true);
+    const body = new FormData();
+    body.append("file", file);
+    try {
+      const res = await fetch("/api/upload/perfil", { method: "POST", body });
+      const data = await res.json();
+      if (res.ok) {
+        setEditForm((f) => ({ ...f, fotoUrl: data.url }));
+      } else {
+        setEditError(data.error || "No se pudo subir la foto.");
+      }
+    } catch {
+      setEditError("No se pudo conectar con el servidor.");
+    }
+    setEditFotoUploading(false);
   }
 
   async function saveEdit(id) {
@@ -608,7 +630,26 @@ export default function AdminPage() {
                     {filteredInscripciones.map((i) =>
                       editingId === i.id ? (
                         <tr key={i.id}>
-                          <td>{i.foto_url ? <img src={i.foto_url} alt="" className="thumb" /> : "—"}</td>
+                          <td className="edit-cell">
+                            {editForm.fotoUrl && <img src={editForm.fotoUrl} alt="" className="thumb" />}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              disabled={editFotoUploading}
+                              onChange={(e) => handleEditFotoChange(e.target.files?.[0])}
+                              style={{ fontSize: "0.7rem", width: 90 }}
+                            />
+                            {editFotoUploading && <span className="hint">Subiendo...</span>}
+                            {editForm.fotoUrl && !editFotoUploading && (
+                              <button
+                                type="button"
+                                className="btn-small btn-cancel"
+                                onClick={() => setEditForm((f) => ({ ...f, fotoUrl: "" }))}
+                              >
+                                Quitar
+                              </button>
+                            )}
+                          </td>
                           <td className="edit-cell">
                             <select
                               value={editForm.equipoId}
