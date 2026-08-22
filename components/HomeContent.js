@@ -151,6 +151,24 @@ export default function HomeContent({
         </div>
       </section>
 
+      {config.evento_sede && (
+        <section className="section" style={{ paddingTop: 0 }}>
+          <div className="container">
+            <h2>Ubicación</h2>
+            <p className="lead">📍 {config.evento_sede}</p>
+            <div className="map-embed">
+              <iframe
+                title="Ubicación del evento"
+                src={`https://www.google.com/maps?q=${encodeURIComponent(config.evento_sede)}&output=embed`}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                allowFullScreen
+              />
+            </div>
+          </div>
+        </section>
+      )}
+
       {scheduleItems.length > 0 && (
         <section className="section" style={{ paddingTop: 0 }}>
           <div className="container">

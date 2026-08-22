@@ -114,6 +114,12 @@ export default function AdminPage() {
   const [savingConfig, setSavingConfig] = useState(false);
   const [configError, setConfigError] = useState("");
   const [configSuccess, setConfigSuccess] = useState(false);
+  const [debouncedSede, setDebouncedSede] = useState("");
+
+  useEffect(() => {
+    const timeout = setTimeout(() => setDebouncedSede(configForm.eventoSede.trim()), 600);
+    return () => clearTimeout(timeout);
+  }, [configForm.eventoSede]);
 
   async function loadAll() {
     setLoading(true);
@@ -1943,7 +1949,7 @@ export default function AdminPage() {
             )}
 
             {activeTab === "configuracion" && (
-              <form onSubmit={handleSaveConfig} className="form-card" style={{ margin: 0, maxWidth: 480 }}>
+              <form onSubmit={handleSaveConfig} className="form-card" style={{ margin: 0, maxWidth: 720 }}>
                 {configError && <div className="alert alert-error">{configError}</div>}
                 {configSuccess && <div className="alert alert-success">Configuración guardada.</div>}
                 <div className="form-group">
@@ -1966,15 +1972,28 @@ export default function AdminPage() {
                   />
                   <p className="hint">Se mostrará como cuenta regresiva en la portada.</p>
                 </div>
-                <div className="form-group">
-                  <label htmlFor="eventoSede">Sede / lugar</label>
-                  <input
-                    id="eventoSede"
-                    value={configForm.eventoSede}
-                    onChange={(e) => setConfigForm((f) => ({ ...f, eventoSede: e.target.value }))}
-                    maxLength={200}
-                    placeholder="Parque Central, Ciudad"
-                  />
+                <div className="config-sede-row">
+                  <div className="form-group config-sede-field">
+                    <label htmlFor="eventoSede">Sede / lugar</label>
+                    <input
+                      id="eventoSede"
+                      value={configForm.eventoSede}
+                      onChange={(e) => setConfigForm((f) => ({ ...f, eventoSede: e.target.value }))}
+                      maxLength={200}
+                      placeholder="Parque Central, Ciudad"
+                    />
+                    <p className="hint">Escribe una dirección o nombre de lugar; se busca en Google Maps.</p>
+                  </div>
+                  {debouncedSede && (
+                    <div className="map-embed config-map-preview">
+                      <iframe
+                        title="Vista previa del mapa"
+                        src={`https://www.google.com/maps?q=${encodeURIComponent(debouncedSede)}&output=embed`}
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                      />
+                    </div>
+                  )}
                 </div>
                 <button type="submit" className="btn btn-primary" style={{ width: "100%" }} disabled={savingConfig}>
                   {savingConfig ? "Guardando..." : "Guardar configuración"}
