@@ -77,6 +77,13 @@ export default function HomeContent({
   return (
     <>
       <section className="hero">
+        <div className="hero-decor" aria-hidden="true">
+          <img src="/img/classic-black-and-white-soccer-ball-isolated-on-white-and-transparent-background-png.webp" alt="" className="hero-decor-ball ball-soccer" />
+          <img src="/img/basketball-ball-3d-render-png.webp" alt="" className="hero-decor-ball ball-basketball" />
+          <img src="/img/ai-generated-volleyball-ball-isolated-on-transparent-background-free-png.webp" alt="" className="hero-decor-ball ball-volleyball" />
+          <img src="/img/medal-awards-and-trophies-png.webp" alt="" className="hero-decor-trophy trophy-1" />
+          <img src="/img/medal-awards-and-trophies-png.webp" alt="" className="hero-decor-trophy trophy-2" />
+        </div>
         <div className="container">
           <span className="badge">🏆 Evento Deportivo Familiar</span>
           {config.evento_nombre ? (
