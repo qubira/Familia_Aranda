@@ -30,25 +30,16 @@ export default function Bracket({ partidos }) {
 
   if (semifinales.length === 0 && !final) return null;
 
-  const campeonId = final?.ganador_id;
-  const campeonNombre =
-    campeonId === final?.equipo_a_id
-      ? final.equipo_a_nombre
-      : campeonId === final?.equipo_b_id
-        ? final.equipo_b_nombre
-        : null;
-  const campeonLogo =
-    campeonId === final?.equipo_a_id
-      ? final.equipo_a_logo
-      : campeonId === final?.equipo_b_id
-        ? final.equipo_b_logo
-        : null;
-  const campeonColor =
-    campeonId === final?.equipo_a_id
-      ? final.equipo_a_color
-      : campeonId === final?.equipo_b_id
-        ? final.equipo_b_color
-        : null;
+  let campeonNombre = null;
+  let campeonLogo = null;
+  let campeonColor = null;
+
+  if (final && final.ganador_id) {
+    const esEquipoA = final.ganador_id === final.equipo_a_id;
+    campeonNombre = esEquipoA ? final.equipo_a_nombre : final.equipo_b_nombre;
+    campeonLogo = esEquipoA ? final.equipo_a_logo : final.equipo_b_logo;
+    campeonColor = esEquipoA ? final.equipo_a_color : final.equipo_b_color;
+  }
 
   return (
     <div className="bracket-panel">
