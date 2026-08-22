@@ -29,6 +29,8 @@ export default function AdminPage() {
   const [editForm, setEditForm] = useState(emptyEditForm);
   const [editError, setEditError] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   async function loadAll() {
     setLoading(true);
@@ -243,27 +245,71 @@ export default function AdminPage() {
   const diasOrdenados = Object.keys(porDia);
   const maxPorDia = Math.max(1, ...Object.values(porDia));
 
+  const navItems = [
+    { key: "dashboard", label: "Dashboard", icon: "📊" },
+    { key: "inscripciones", label: "Inscripciones", icon: "📝", badge: inscripciones.length },
+    { key: "equipos", label: "Equipos", icon: "🎽" },
+    { key: "galeria", label: "Galería", icon: "📸", badge: galeria.length },
+  ];
+
+  const tabTitles = {
+    dashboard: "📊 Dashboard",
+    inscripciones: `📝 Inscripciones (${filteredInscripciones.length} de ${inscripciones.length})`,
+    equipos: "🎽 Logos de equipos",
+    galeria: `📸 Galería del evento (${galeria.length})`,
+  };
+
   return (
-    <main className="section">
-      <div className="container">
+    <div className={`admin-layout${sidebarOpen ? " sidebar-open" : ""}`}>
+      <aside className="admin-sidebar">
+        <div className="admin-brand">🏆 Panel Aranda</div>
+        <nav className="admin-nav">
+          {navItems.map((item) => (
+            <button
+              key={item.key}
+              className={`admin-nav-item${activeTab === item.key ? " active" : ""}`}
+              onClick={() => {
+                setActiveTab(item.key);
+                setSidebarOpen(false);
+              }}
+            >
+              <span className="admin-nav-icon">{item.icon}</span>
+              <span>{item.label}</span>
+              {typeof item.badge === "number" && <span className="admin-nav-badge">{item.badge}</span>}
+            </button>
+          ))}
+        </nav>
+        <div className="admin-sidebar-footer">
+          <a href="/" className="admin-nav-item">
+            <span className="admin-nav-icon">←</span>
+            <span>Volver al inicio</span>
+          </a>
+          <button className="admin-nav-item" onClick={handleLogout}>
+            <span className="admin-nav-icon">🚪</span>
+            <span>Cerrar sesión</span>
+          </button>
+        </div>
+      </aside>
+
+      <button className="admin-sidebar-toggle" onClick={() => setSidebarOpen((v) => !v)}>
+        ☰ Menú
+      </button>
+
+      <main className="admin-main">
         <div className="admin-header">
-          <h2 style={{ margin: 0 }}>Panel de organizadores</h2>
-          <div style={{ display: "flex", gap: 12 }}>
+          <h2 style={{ margin: 0 }}>{tabTitles[activeTab]}</h2>
+          {activeTab === "inscripciones" && (
             <a href="/api/admin/export" className="btn btn-primary">
               Exportar CSV
             </a>
-            <button onClick={handleLogout} className="btn btn-accent">
-              Cerrar sesión
-            </button>
-          </div>
+          )}
         </div>
 
         {loading ? (
           <p>Cargando...</p>
         ) : (
           <>
-            <div className="admin-section">
-              <h3>📊 Dashboard</h3>
+            {activeTab === "dashboard" && (
               <div className="dashboard-charts">
                 <div className="chart-card">
                   <h4>Inscritos por equipo</h4>
@@ -338,11 +384,10 @@ export default function AdminPage() {
                   )}
                 </div>
               </div>
-            </div>
+            )}
 
-            <div className="admin-section">
-              <h3>Inscripciones ({filteredInscripciones.length} de {inscripciones.length})</h3>
-
+            {activeTab === "inscripciones" && (
+              <>
               <div className="filter-bar">
                 <input
                   type="text"
@@ -485,10 +530,11 @@ export default function AdminPage() {
                   </tbody>
                 </table>
               </div>
-            </div>
+              </>
+            )}
 
-            <div className="admin-section">
-              <h3>Logos de equipos</h3>
+            {activeTab === "equipos" && (
+              <>
               {equipos.map((equipo) => (
                 <div className="equipo-manage-card" key={equipo.id}>
                   {equipo.logo_url ? (
@@ -506,10 +552,11 @@ export default function AdminPage() {
                   {logoUploading === equipo.id && <span className="hint">Subiendo...</span>}
                 </div>
               ))}
-            </div>
+              </>
+            )}
 
-            <div className="admin-section">
-              <h3>Galería del evento ({galeria.length})</h3>
+            {activeTab === "galeria" && (
+              <>
               <form onSubmit={handleGaleriaUpload} className="form-row" style={{ marginBottom: 24, alignItems: "end" }}>
                 <div className="form-group">
                   <label htmlFor="galeriaFile">Nueva foto</label>
@@ -543,16 +590,11 @@ export default function AdminPage() {
                   </div>
                 ))}
               </div>
-            </div>
+              </>
+            )}
           </>
         )}
-
-        <div style={{ textAlign: "center", marginTop: 24 }}>
-          <a href="/" className="link-back">
-            ← Volver al inicio
-          </a>
-        </div>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }
