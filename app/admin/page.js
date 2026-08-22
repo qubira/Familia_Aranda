@@ -32,6 +32,11 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const [editingEquipoId, setEditingEquipoId] = useState(null);
+  const [equipoEditForm, setEquipoEditForm] = useState({ nombre: "", descripcion: "", color: "#1e3a8a" });
+  const [equipoEditError, setEquipoEditError] = useState("");
+  const [savingEquipoEdit, setSavingEquipoEdit] = useState(false);
+
   async function loadAll() {
     setLoading(true);
     const res = await fetch("/api/admin/inscripciones");
@@ -92,6 +97,45 @@ export default function AdminPage() {
       setEquipos(equiposData.equipos || []);
     }
     setLogoUploading(null);
+  }
+
+  function startEquipoEdit(equipo) {
+    setEditingEquipoId(equipo.id);
+    setEquipoEditError("");
+    setEquipoEditForm({
+      nombre: equipo.nombre,
+      descripcion: equipo.descripcion || "",
+      color: equipo.color,
+    });
+  }
+
+  function cancelEquipoEdit() {
+    setEditingEquipoId(null);
+    setEquipoEditError("");
+  }
+
+  async function saveEquipoEdit(id) {
+    setSavingEquipoEdit(true);
+    setEquipoEditError("");
+    try {
+      const res = await fetch(`/api/admin/equipos/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(equipoEditForm),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setEquipoEditError(data.error || "No se pudo guardar.");
+        setSavingEquipoEdit(false);
+        return;
+      }
+      const equiposData = await fetch("/api/equipos").then((r) => r.json());
+      setEquipos(equiposData.equipos || []);
+      setEditingEquipoId(null);
+    } catch {
+      setEquipoEditError("No se pudo conectar con el servidor.");
+    }
+    setSavingEquipoEdit(false);
   }
 
   async function handleGaleriaUpload(e) {
@@ -635,23 +679,67 @@ export default function AdminPage() {
 
             {activeTab === "equipos" && (
               <>
-              {equipos.map((equipo) => (
-                <div className="equipo-manage-card" key={equipo.id}>
-                  {equipo.logo_url ? (
-                    <img src={equipo.logo_url} alt={equipo.nombre} style={{ borderRadius: "50%", objectFit: "cover" }} />
-                  ) : (
-                    <div className="team-dot" style={{ "--team-color": equipo.color }} />
-                  )}
-                  <span className="equipo-nombre">{equipo.nombre}</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    disabled={logoUploading === equipo.id}
-                    onChange={(e) => handleLogoChange(equipo.id, e.target.files?.[0])}
-                  />
-                  {logoUploading === equipo.id && <span className="hint">Subiendo...</span>}
-                </div>
-              ))}
+              {equipoEditError && <div className="alert alert-error">{equipoEditError}</div>}
+              {equipos.map((equipo) =>
+                editingEquipoId === equipo.id ? (
+                  <div className="equipo-manage-card equipo-editing" key={equipo.id}>
+                    <input
+                      type="color"
+                      className="color-input"
+                      value={equipoEditForm.color}
+                      onChange={(e) => setEquipoEditForm((f) => ({ ...f, color: e.target.value }))}
+                    />
+                    <div className="equipo-edit-fields">
+                      <input
+                        placeholder="Nombre del equipo"
+                        value={equipoEditForm.nombre}
+                        onChange={(e) => setEquipoEditForm((f) => ({ ...f, nombre: e.target.value }))}
+                        maxLength={100}
+                      />
+                      <input
+                        placeholder="Descripción (opcional)"
+                        value={equipoEditForm.descripcion}
+                        onChange={(e) => setEquipoEditForm((f) => ({ ...f, descripcion: e.target.value }))}
+                        maxLength={300}
+                      />
+                    </div>
+                    <div className="row-actions">
+                      <button
+                        className="btn-small btn-save"
+                        onClick={() => saveEquipoEdit(equipo.id)}
+                        disabled={savingEquipoEdit}
+                      >
+                        {savingEquipoEdit ? "..." : "Guardar"}
+                      </button>
+                      <button className="btn-small btn-cancel" onClick={cancelEquipoEdit} disabled={savingEquipoEdit}>
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="equipo-manage-card" key={equipo.id}>
+                    {equipo.logo_url ? (
+                      <img src={equipo.logo_url} alt={equipo.nombre} style={{ borderRadius: "50%", objectFit: "cover" }} />
+                    ) : (
+                      <div className="team-dot" style={{ "--team-color": equipo.color }} />
+                    )}
+                    <div className="equipo-nombre">
+                      {equipo.nombre}
+                      {equipo.descripcion && <span className="equipo-descripcion">{equipo.descripcion}</span>}
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      disabled={logoUploading === equipo.id}
+                      onChange={(e) => handleLogoChange(equipo.id, e.target.files?.[0])}
+                    />
+                    {logoUploading === equipo.id && <span className="hint">Subiendo...</span>}
+                    <button className="btn-small btn-edit" onClick={() => startEquipoEdit(equipo)}>
+                      Editar
+                    </button>
+                  </div>
+                )
+              )}
               </>
             )}
 
