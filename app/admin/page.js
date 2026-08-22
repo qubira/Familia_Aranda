@@ -35,6 +35,12 @@ export default function AdminPage() {
   const [equipoEditError, setEquipoEditError] = useState("");
   const [savingEquipoEdit, setSavingEquipoEdit] = useState(false);
 
+  const [showNewEquipoForm, setShowNewEquipoForm] = useState(false);
+  const [newEquipoForm, setNewEquipoForm] = useState({ nombre: "", descripcion: "", color: "#1e3a8a" });
+  const [newEquipoError, setNewEquipoError] = useState("");
+  const [creatingEquipo, setCreatingEquipo] = useState(false);
+  const [deletingEquipoId, setDeletingEquipoId] = useState(null);
+
   async function loadAll() {
     setLoading(true);
     const res = await fetch("/api/admin/inscripciones");
@@ -134,6 +140,47 @@ export default function AdminPage() {
       setEquipoEditError("No se pudo conectar con el servidor.");
     }
     setSavingEquipoEdit(false);
+  }
+
+  async function handleCreateEquipo(e) {
+    e.preventDefault();
+    setCreatingEquipo(true);
+    setNewEquipoError("");
+    try {
+      const res = await fetch("/api/admin/equipos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newEquipoForm),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setNewEquipoError(data.error || "No se pudo crear el equipo.");
+        setCreatingEquipo(false);
+        return;
+      }
+      const equiposData = await fetch("/api/equipos").then((r) => r.json());
+      setEquipos(equiposData.equipos || []);
+      setNewEquipoForm({ nombre: "", descripcion: "", color: "#1e3a8a" });
+      setShowNewEquipoForm(false);
+    } catch {
+      setNewEquipoError("No se pudo conectar con el servidor.");
+    }
+    setCreatingEquipo(false);
+  }
+
+  async function handleDeleteEquipo(id, nombre) {
+    if (!window.confirm(`¿Eliminar el equipo "${nombre}"? Solo se puede si no tiene inscripciones.`)) {
+      return;
+    }
+    setDeletingEquipoId(id);
+    const res = await fetch(`/api/admin/equipos/${id}`, { method: "DELETE" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      alert(data.error || "No se pudo eliminar el equipo.");
+    } else {
+      setEquipos((list) => list.filter((e) => e.id !== id));
+    }
+    setDeletingEquipoId(null);
   }
 
   async function handleGaleriaUpload(e) {
@@ -657,6 +704,59 @@ export default function AdminPage() {
 
             {activeTab === "equipos" && (
               <>
+              {!showNewEquipoForm ? (
+                <button
+                  className="btn btn-primary"
+                  style={{ marginBottom: 20 }}
+                  onClick={() => setShowNewEquipoForm(true)}
+                >
+                  + Nuevo equipo
+                </button>
+              ) : (
+                <form onSubmit={handleCreateEquipo} className="equipo-manage-card equipo-editing" style={{ marginBottom: 20 }}>
+                  {newEquipoError && <div className="alert alert-error" style={{ width: "100%" }}>{newEquipoError}</div>}
+                  <input
+                    type="color"
+                    className="color-input"
+                    value={newEquipoForm.color}
+                    onChange={(e) => setNewEquipoForm((f) => ({ ...f, color: e.target.value }))}
+                  />
+                  <div className="equipo-edit-fields">
+                    <input
+                      placeholder="Nombre del equipo"
+                      value={newEquipoForm.nombre}
+                      onChange={(e) => setNewEquipoForm((f) => ({ ...f, nombre: e.target.value }))}
+                      maxLength={100}
+                      required
+                      autoFocus
+                    />
+                    <input
+                      placeholder="Descripción (opcional)"
+                      value={newEquipoForm.descripcion}
+                      onChange={(e) => setNewEquipoForm((f) => ({ ...f, descripcion: e.target.value }))}
+                      maxLength={300}
+                    />
+                  </div>
+                  <div className="row-actions">
+                    <button type="submit" className="btn-small btn-save" disabled={creatingEquipo}>
+                      {creatingEquipo ? "..." : "Crear"}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-small btn-cancel"
+                      disabled={creatingEquipo}
+                      onClick={() => {
+                        setShowNewEquipoForm(false);
+                        setNewEquipoError("");
+                        setNewEquipoForm({ nombre: "", descripcion: "", color: "#1e3a8a" });
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </form>
+              )}
+
               {equipoEditError && <div className="alert alert-error">{equipoEditError}</div>}
               {equipos.map((equipo) =>
                 editingEquipoId === equipo.id ? (
@@ -712,9 +812,18 @@ export default function AdminPage() {
                       onChange={(e) => handleLogoChange(equipo.id, e.target.files?.[0])}
                     />
                     {logoUploading === equipo.id && <span className="hint">Subiendo...</span>}
-                    <button className="btn-small btn-edit" onClick={() => startEquipoEdit(equipo)}>
-                      Editar
-                    </button>
+                    <div className="row-actions">
+                      <button className="btn-small btn-edit" onClick={() => startEquipoEdit(equipo)}>
+                        Editar
+                      </button>
+                      <button
+                        className="btn-small btn-delete"
+                        disabled={deletingEquipoId === equipo.id}
+                        onClick={() => handleDeleteEquipo(equipo.id, equipo.nombre)}
+                      >
+                        {deletingEquipoId === equipo.id ? "..." : "Eliminar"}
+                      </button>
+                    </div>
                   </div>
                 )
               )}

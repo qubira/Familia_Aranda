@@ -16,6 +16,7 @@ export const config = {
     "/api/admin/inscripciones",
     "/api/admin/inscripciones/:path*",
     "/api/admin/export",
+    "/api/admin/equipos",
     "/api/admin/equipos/:path*",
     "/api/admin/galeria",
     "/api/admin/galeria/:path*",

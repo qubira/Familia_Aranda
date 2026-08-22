@@ -37,9 +37,13 @@ ALTER TABLE inscripciones ALTER COLUMN telefono DROP NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_inscripciones_equipo ON inscripciones(equipo_id);
 
-INSERT INTO equipos (nombre, color, descripcion) VALUES
+-- Solo siembra los equipos de ejemplo si la tabla esta completamente vacia,
+-- para no volver a insertarlos si ya fueron renombrados por un organizador.
+INSERT INTO equipos (nombre, color, descripcion)
+SELECT * FROM (VALUES
   ('Equipo Aranda Rojo', '#dc2626', 'La rama roja de la familia'),
   ('Equipo Aranda Azul', '#2563eb', 'La rama azul de la familia'),
   ('Equipo Aranda Verde', '#16a34a', 'La rama verde de la familia'),
   ('Equipo Aranda Amarillo', '#ca8a04', 'La rama amarilla de la familia')
-ON CONFLICT (nombre) DO NOTHING;
+) AS v(nombre, color, descripcion)
+WHERE NOT EXISTS (SELECT 1 FROM equipos);
