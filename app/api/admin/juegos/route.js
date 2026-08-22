@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { validateJuegoInput } from "@/lib/juegoValidation";
 
 export async function GET() {
-  const juegos = await sql`SELECT id, nombre, descripcion, estado FROM juegos ORDER BY created_at DESC`;
+  const juegos = await sql`SELECT id, nombre, descripcion, estado, imagen_url FROM juegos ORDER BY created_at DESC`;
   return NextResponse.json({ juegos });
 }
 

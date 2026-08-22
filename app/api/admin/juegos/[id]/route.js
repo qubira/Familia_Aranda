@@ -1,6 +1,7 @@
 import { sql } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { validateJuegoInput } from "@/lib/juegoValidation";
+import { deleteImage } from "@/lib/cloudinary";
 
 export async function PATCH(request, { params }) {
   const id = Number((await params).id);
@@ -46,9 +47,13 @@ export async function DELETE(request, { params }) {
     );
   }
 
-  const [deleted] = await sql`DELETE FROM juegos WHERE id = ${id} RETURNING id`;
+  const [deleted] = await sql`DELETE FROM juegos WHERE id = ${id} RETURNING id, imagen_public_id`;
   if (!deleted) {
     return NextResponse.json({ error: "El juego no existe." }, { status: 404 });
+  }
+
+  if (deleted.imagen_public_id) {
+    deleteImage(deleted.imagen_public_id).catch(() => {});
   }
 
   return NextResponse.json({ ok: true });

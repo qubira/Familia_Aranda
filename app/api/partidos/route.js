@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 export async function GET() {
   const partidos = await sql`
     SELECT p.id, p.hora_inicio, p.hora_fin,
-           j.nombre AS juego_nombre,
+           j.nombre AS juego_nombre, j.imagen_url AS juego_imagen,
            ea.nombre AS equipo_a_nombre, ea.color AS equipo_a_color,
            eb.nombre AS equipo_b_nombre, eb.color AS equipo_b_color
     FROM partidos p

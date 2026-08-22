@@ -34,6 +34,8 @@ CREATE TABLE IF NOT EXISTS juegos (
   nombre VARCHAR(150) NOT NULL,
   descripcion TEXT,
   estado VARCHAR(20) NOT NULL DEFAULT 'propuesto' CHECK (estado IN ('propuesto', 'confirmado')),
+  imagen_url TEXT,
+  imagen_public_id TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -64,6 +66,8 @@ ALTER TABLE equipos ADD COLUMN IF NOT EXISTS logo_public_id TEXT;
 ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS foto_url TEXT;
 ALTER TABLE inscripciones ALTER COLUMN email DROP NOT NULL;
 ALTER TABLE inscripciones ALTER COLUMN telefono DROP NOT NULL;
+ALTER TABLE juegos ADD COLUMN IF NOT EXISTS imagen_url TEXT;
+ALTER TABLE juegos ADD COLUMN IF NOT EXISTS imagen_public_id TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_inscripciones_equipo ON inscripciones(equipo_id);
 

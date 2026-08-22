@@ -19,6 +19,13 @@ function toDatetimeLocalValue(iso) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+function toTimeValue(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export default function AdminPage() {
   const [authState, setAuthState] = useState("checking"); // checking | out | in
   const [password, setPassword] = useState("");
@@ -62,6 +69,7 @@ export default function AdminPage() {
   const [juegoEditError, setJuegoEditError] = useState("");
   const [savingJuegoEdit, setSavingJuegoEdit] = useState(false);
   const [juegoActionId, setJuegoActionId] = useState(null);
+  const [juegoImagenUploading, setJuegoImagenUploading] = useState(null);
 
   const [partidos, setPartidos] = useState([]);
   const [showNewPartidoForm, setShowNewPartidoForm] = useState(false);
@@ -322,15 +330,39 @@ export default function AdminPage() {
     setJuegoActionId(null);
   }
 
+  async function handleJuegoImagenChange(juegoId, file) {
+    if (!file) return;
+    setJuegoImagenUploading(juegoId);
+    const body = new FormData();
+    body.append("file", file);
+    body.append("juegoId", juegoId);
+    const res = await fetch("/api/admin/juegos/imagen", { method: "POST", body });
+    if (res.ok) {
+      const { url } = await res.json();
+      setJuegos((list) => list.map((j) => (j.id === juegoId ? { ...j, imagen_url: url } : j)));
+    }
+    setJuegoImagenUploading(null);
+  }
+
   async function handleCreatePartido(e) {
     e.preventDefault();
     setCreatingPartido(true);
     setNewPartidoError("");
+    const eventoFecha = configForm.eventoFecha ? configForm.eventoFecha.split("T")[0] : null;
+    if (!eventoFecha) {
+      setNewPartidoError("Primero configura la fecha del evento en la pestaña Configuración.");
+      setCreatingPartido(false);
+      return;
+    }
     try {
       const res = await fetch("/api/admin/partidos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newPartidoForm),
+        body: JSON.stringify({
+          ...newPartidoForm,
+          horaInicio: `${eventoFecha}T${newPartidoForm.horaInicio}`,
+          horaFin: `${eventoFecha}T${newPartidoForm.horaFin}`,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -355,8 +387,8 @@ export default function AdminPage() {
       juegoId: String(p.juego_id),
       equipoAId: String(p.equipo_a_id),
       equipoBId: String(p.equipo_b_id),
-      horaInicio: toDatetimeLocalValue(p.hora_inicio),
-      horaFin: toDatetimeLocalValue(p.hora_fin),
+      horaInicio: toTimeValue(p.hora_inicio),
+      horaFin: toTimeValue(p.hora_fin),
     });
   }
 
@@ -368,11 +400,21 @@ export default function AdminPage() {
   async function savePartidoEdit(id) {
     setSavingPartidoEdit(true);
     setPartidoEditError("");
+    const eventoFecha = configForm.eventoFecha ? configForm.eventoFecha.split("T")[0] : null;
+    if (!eventoFecha) {
+      setPartidoEditError("Primero configura la fecha del evento en la pestaña Configuración.");
+      setSavingPartidoEdit(false);
+      return;
+    }
     try {
       const res = await fetch(`/api/admin/partidos/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(partidoEditForm),
+        body: JSON.stringify({
+          ...partidoEditForm,
+          horaInicio: `${eventoFecha}T${partidoEditForm.horaInicio}`,
+          horaFin: `${eventoFecha}T${partidoEditForm.horaFin}`,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -654,9 +696,24 @@ export default function AdminPage() {
     }
     return (
       <div className="juego-card" key={juego.id}>
-        <div className="juego-info">
-          <strong>{juego.nombre}</strong>
-          {juego.descripcion && <p>{juego.descripcion}</p>}
+        <div className="juego-card-top">
+          {juego.imagen_url ? (
+            <img src={juego.imagen_url} alt={juego.nombre} className="juego-imagen" />
+          ) : (
+            <div className="juego-imagen juego-imagen-placeholder">🎮</div>
+          )}
+          <div className="juego-info">
+            <strong>{juego.nombre}</strong>
+            {juego.descripcion && <p>{juego.descripcion}</p>}
+            <input
+              type="file"
+              accept="image/*"
+              disabled={juegoImagenUploading === juego.id}
+              onChange={(e) => handleJuegoImagenChange(juego.id, e.target.files?.[0])}
+              style={{ fontSize: "0.75rem" }}
+            />
+            {juegoImagenUploading === juego.id && <span className="hint">Subiendo...</span>}
+          </div>
         </div>
         <div className="row-actions">
           <button
@@ -1246,12 +1303,26 @@ export default function AdminPage() {
 
             {activeTab === "planificacion" && (
               <>
-              {juegosConfirmados.length === 0 ? (
+              {!configForm.eventoFecha ? (
+                <p className="empty-chart">
+                  Primero configura la fecha del evento en la pestaña "Configuración". Todos los partidos se
+                  programan a una hora de ese mismo día.
+                </p>
+              ) : juegosConfirmados.length === 0 ? (
                 <p className="empty-chart">
                   Primero confirma al menos un juego en la pestaña "Juegos" para poder planificar partidos.
                 </p>
               ) : (
                 <>
+                <p className="hint" style={{ marginBottom: 16 }}>
+                  📅 Todos los partidos serán el{" "}
+                  {new Date(`${configForm.eventoFecha.split("T")[0]}T00:00`).toLocaleDateString("es-MX", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                  .
+                </p>
                 {!showNewPartidoForm ? (
                   <button
                     className="btn btn-primary"
@@ -1314,7 +1385,7 @@ export default function AdminPage() {
                       <div className="form-group">
                         <label>Hora de inicio</label>
                         <input
-                          type="datetime-local"
+                          type="time"
                           value={newPartidoForm.horaInicio}
                           onChange={(e) => setNewPartidoForm((f) => ({ ...f, horaInicio: e.target.value }))}
                           required
@@ -1323,7 +1394,7 @@ export default function AdminPage() {
                       <div className="form-group">
                         <label>Hora de fin</label>
                         <input
-                          type="datetime-local"
+                          type="time"
                           value={newPartidoForm.horaFin}
                           onChange={(e) => setNewPartidoForm((f) => ({ ...f, horaFin: e.target.value }))}
                           required
@@ -1414,7 +1485,7 @@ export default function AdminPage() {
                         <div className="form-group">
                           <label>Hora de inicio</label>
                           <input
-                            type="datetime-local"
+                            type="time"
                             value={partidoEditForm.horaInicio}
                             onChange={(e) => setPartidoEditForm((f) => ({ ...f, horaInicio: e.target.value }))}
                             required
@@ -1423,7 +1494,7 @@ export default function AdminPage() {
                         <div className="form-group">
                           <label>Hora de fin</label>
                           <input
-                            type="datetime-local"
+                            type="time"
                             value={partidoEditForm.horaFin}
                             onChange={(e) => setPartidoEditForm((f) => ({ ...f, horaFin: e.target.value }))}
                             required

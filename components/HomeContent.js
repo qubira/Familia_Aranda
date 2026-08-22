@@ -149,6 +149,9 @@ export default function HomeContent({ initialEquipos, initialInscritos, initialC
                       {new Date(p.hora_inicio).toLocaleDateString("es-MX", { day: "2-digit", month: "short" })}
                     </span>
                   </div>
+                  {p.juego_imagen && (
+                    <img src={p.juego_imagen} alt={p.juego_nombre} className="schedule-juego-img" />
+                  )}
                   <div className="schedule-info">
                     <span className="schedule-juego">{p.juego_nombre}</span>
                     <div className="schedule-vs">
