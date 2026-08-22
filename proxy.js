@@ -20,5 +20,10 @@ export const config = {
     "/api/admin/equipos/:path*",
     "/api/admin/galeria",
     "/api/admin/galeria/:path*",
+    "/api/admin/juegos",
+    "/api/admin/juegos/:path*",
+    "/api/admin/partidos",
+    "/api/admin/partidos/:path*",
+    "/api/admin/config",
   ],
 };

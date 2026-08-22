@@ -10,6 +10,15 @@ const emptyEditForm = {
   fotoUrl: "",
 };
 
+const emptyPartidoForm = { juegoId: "", equipoAId: "", equipoBId: "", horaInicio: "", horaFin: "" };
+
+function toDatetimeLocalValue(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export default function AdminPage() {
   const [authState, setAuthState] = useState("checking"); // checking | out | in
   const [password, setPassword] = useState("");
@@ -43,6 +52,33 @@ export default function AdminPage() {
   const [creatingEquipo, setCreatingEquipo] = useState(false);
   const [deletingEquipoId, setDeletingEquipoId] = useState(null);
 
+  const [juegos, setJuegos] = useState([]);
+  const [showNewJuegoForm, setShowNewJuegoForm] = useState(false);
+  const [newJuegoForm, setNewJuegoForm] = useState({ nombre: "", descripcion: "" });
+  const [newJuegoError, setNewJuegoError] = useState("");
+  const [creatingJuego, setCreatingJuego] = useState(false);
+  const [editingJuegoId, setEditingJuegoId] = useState(null);
+  const [juegoEditForm, setJuegoEditForm] = useState({ nombre: "", descripcion: "" });
+  const [juegoEditError, setJuegoEditError] = useState("");
+  const [savingJuegoEdit, setSavingJuegoEdit] = useState(false);
+  const [juegoActionId, setJuegoActionId] = useState(null);
+
+  const [partidos, setPartidos] = useState([]);
+  const [showNewPartidoForm, setShowNewPartidoForm] = useState(false);
+  const [newPartidoForm, setNewPartidoForm] = useState(emptyPartidoForm);
+  const [newPartidoError, setNewPartidoError] = useState("");
+  const [creatingPartido, setCreatingPartido] = useState(false);
+  const [editingPartidoId, setEditingPartidoId] = useState(null);
+  const [partidoEditForm, setPartidoEditForm] = useState(emptyPartidoForm);
+  const [partidoEditError, setPartidoEditError] = useState("");
+  const [savingPartidoEdit, setSavingPartidoEdit] = useState(false);
+  const [deletingPartidoId, setDeletingPartidoId] = useState(null);
+
+  const [configForm, setConfigForm] = useState({ eventoNombre: "", eventoFecha: "", eventoSede: "" });
+  const [savingConfig, setSavingConfig] = useState(false);
+  const [configError, setConfigError] = useState("");
+  const [configSuccess, setConfigSuccess] = useState(false);
+
   async function loadAll() {
     setLoading(true);
     const res = await fetch("/api/admin/inscripciones");
@@ -51,14 +87,25 @@ export default function AdminPage() {
       setLoading(false);
       return;
     }
-    const [inscripcionesData, equiposData, galeriaData] = await Promise.all([
+    const [inscripcionesData, equiposData, galeriaData, juegosData, partidosData, configData] = await Promise.all([
       res.json(),
       fetch("/api/equipos").then((r) => r.json()),
       fetch("/api/admin/galeria").then((r) => r.json()),
+      fetch("/api/admin/juegos").then((r) => r.json()),
+      fetch("/api/admin/partidos").then((r) => r.json()),
+      fetch("/api/admin/config").then((r) => r.json()),
     ]);
     setInscripciones(inscripcionesData.inscripciones || []);
     setEquipos(equiposData.equipos || []);
     setGaleria(galeriaData.fotos || []);
+    setJuegos(juegosData.juegos || []);
+    setPartidos(partidosData.partidos || []);
+    const cfg = configData.config || {};
+    setConfigForm({
+      eventoNombre: cfg.evento_nombre || "",
+      eventoFecha: toDatetimeLocalValue(cfg.evento_fecha),
+      eventoSede: cfg.evento_sede || "",
+    });
     setAuthState("in");
     setLoading(false);
   }
@@ -89,6 +136,8 @@ export default function AdminPage() {
     setInscripciones([]);
     setEquipos([]);
     setGaleria([]);
+    setJuegos([]);
+    setPartidos([]);
   }
 
   async function handleLogoChange(equipoId, file) {
@@ -183,6 +232,193 @@ export default function AdminPage() {
       setEquipos((list) => list.filter((e) => e.id !== id));
     }
     setDeletingEquipoId(null);
+  }
+
+  async function handleCreateJuego(e) {
+    e.preventDefault();
+    setCreatingJuego(true);
+    setNewJuegoError("");
+    try {
+      const res = await fetch("/api/admin/juegos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newJuegoForm),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setNewJuegoError(data.error || "No se pudo crear el juego.");
+        setCreatingJuego(false);
+        return;
+      }
+      const juegosData = await fetch("/api/admin/juegos").then((r) => r.json());
+      setJuegos(juegosData.juegos || []);
+      setNewJuegoForm({ nombre: "", descripcion: "" });
+      setShowNewJuegoForm(false);
+    } catch {
+      setNewJuegoError("No se pudo conectar con el servidor.");
+    }
+    setCreatingJuego(false);
+  }
+
+  function startJuegoEdit(juego) {
+    setEditingJuegoId(juego.id);
+    setJuegoEditError("");
+    setJuegoEditForm({ nombre: juego.nombre, descripcion: juego.descripcion || "" });
+  }
+
+  function cancelJuegoEdit() {
+    setEditingJuegoId(null);
+    setJuegoEditError("");
+  }
+
+  async function saveJuegoEdit(id, estado) {
+    setSavingJuegoEdit(true);
+    setJuegoEditError("");
+    try {
+      const res = await fetch(`/api/admin/juegos/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...juegoEditForm, estado }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setJuegoEditError(data.error || "No se pudo guardar.");
+        setSavingJuegoEdit(false);
+        return;
+      }
+      const juegosData = await fetch("/api/admin/juegos").then((r) => r.json());
+      setJuegos(juegosData.juegos || []);
+      setEditingJuegoId(null);
+    } catch {
+      setJuegoEditError("No se pudo conectar con el servidor.");
+    }
+    setSavingJuegoEdit(false);
+  }
+
+  async function toggleJuegoEstado(juego) {
+    setJuegoActionId(juego.id);
+    const nuevoEstado = juego.estado === "propuesto" ? "confirmado" : "propuesto";
+    const res = await fetch(`/api/admin/juegos/${juego.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nombre: juego.nombre, descripcion: juego.descripcion, estado: nuevoEstado }),
+    });
+    if (res.ok) {
+      setJuegos((list) => list.map((j) => (j.id === juego.id ? { ...j, estado: nuevoEstado } : j)));
+    }
+    setJuegoActionId(null);
+  }
+
+  async function handleDeleteJuego(id, nombre) {
+    if (!window.confirm(`¿Eliminar el juego "${nombre}"?`)) return;
+    setJuegoActionId(id);
+    const res = await fetch(`/api/admin/juegos/${id}`, { method: "DELETE" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      alert(data.error || "No se pudo eliminar el juego.");
+    } else {
+      setJuegos((list) => list.filter((j) => j.id !== id));
+    }
+    setJuegoActionId(null);
+  }
+
+  async function handleCreatePartido(e) {
+    e.preventDefault();
+    setCreatingPartido(true);
+    setNewPartidoError("");
+    try {
+      const res = await fetch("/api/admin/partidos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newPartidoForm),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setNewPartidoError(data.error || "No se pudo crear el partido.");
+        setCreatingPartido(false);
+        return;
+      }
+      const partidosData = await fetch("/api/admin/partidos").then((r) => r.json());
+      setPartidos(partidosData.partidos || []);
+      setNewPartidoForm(emptyPartidoForm);
+      setShowNewPartidoForm(false);
+    } catch {
+      setNewPartidoError("No se pudo conectar con el servidor.");
+    }
+    setCreatingPartido(false);
+  }
+
+  function startPartidoEdit(p) {
+    setEditingPartidoId(p.id);
+    setPartidoEditError("");
+    setPartidoEditForm({
+      juegoId: String(p.juego_id),
+      equipoAId: String(p.equipo_a_id),
+      equipoBId: String(p.equipo_b_id),
+      horaInicio: toDatetimeLocalValue(p.hora_inicio),
+      horaFin: toDatetimeLocalValue(p.hora_fin),
+    });
+  }
+
+  function cancelPartidoEdit() {
+    setEditingPartidoId(null);
+    setPartidoEditError("");
+  }
+
+  async function savePartidoEdit(id) {
+    setSavingPartidoEdit(true);
+    setPartidoEditError("");
+    try {
+      const res = await fetch(`/api/admin/partidos/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(partidoEditForm),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPartidoEditError(data.error || "No se pudo guardar.");
+        setSavingPartidoEdit(false);
+        return;
+      }
+      const partidosData = await fetch("/api/admin/partidos").then((r) => r.json());
+      setPartidos(partidosData.partidos || []);
+      setEditingPartidoId(null);
+    } catch {
+      setPartidoEditError("No se pudo conectar con el servidor.");
+    }
+    setSavingPartidoEdit(false);
+  }
+
+  async function handleDeletePartido(id) {
+    if (!window.confirm("¿Eliminar este partido de la planificación?")) return;
+    setDeletingPartidoId(id);
+    setPartidos((list) => list.filter((p) => p.id !== id));
+    await fetch(`/api/admin/partidos/${id}`, { method: "DELETE" });
+    setDeletingPartidoId(null);
+  }
+
+  async function handleSaveConfig(e) {
+    e.preventDefault();
+    setSavingConfig(true);
+    setConfigError("");
+    setConfigSuccess(false);
+    try {
+      const res = await fetch("/api/admin/config", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(configForm),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setConfigError(data.error || "No se pudo guardar.");
+        setSavingConfig(false);
+        return;
+      }
+      setConfigSuccess(true);
+    } catch {
+      setConfigError("No se pudo conectar con el servidor.");
+    }
+    setSavingConfig(false);
   }
 
   async function handleGaleriaUpload(e) {
@@ -380,10 +616,78 @@ export default function AdminPage() {
   const donutBackground =
     totalInscritosDashboard > 0 ? `conic-gradient(${donutStops.join(", ")})` : null;
 
+  const juegosPropuestos = juegos.filter((j) => j.estado === "propuesto");
+  const juegosConfirmados = juegos.filter((j) => j.estado === "confirmado");
+
+  function renderJuegoCard(juego) {
+    if (editingJuegoId === juego.id) {
+      return (
+        <div className="equipo-manage-card equipo-editing" key={juego.id}>
+          <div className="equipo-edit-fields">
+            <input
+              placeholder="Nombre del juego"
+              value={juegoEditForm.nombre}
+              onChange={(e) => setJuegoEditForm((f) => ({ ...f, nombre: e.target.value }))}
+              maxLength={150}
+            />
+            <input
+              placeholder="Descripción (opcional)"
+              value={juegoEditForm.descripcion}
+              onChange={(e) => setJuegoEditForm((f) => ({ ...f, descripcion: e.target.value }))}
+              maxLength={500}
+            />
+          </div>
+          <div className="row-actions">
+            <button
+              className="btn-small btn-save"
+              onClick={() => saveJuegoEdit(juego.id, juego.estado)}
+              disabled={savingJuegoEdit}
+            >
+              {savingJuegoEdit ? "..." : "Guardar"}
+            </button>
+            <button className="btn-small btn-cancel" onClick={cancelJuegoEdit} disabled={savingJuegoEdit}>
+              Cancelar
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="juego-card" key={juego.id}>
+        <div className="juego-info">
+          <strong>{juego.nombre}</strong>
+          {juego.descripcion && <p>{juego.descripcion}</p>}
+        </div>
+        <div className="row-actions">
+          <button
+            className="btn-small btn-save"
+            onClick={() => toggleJuegoEstado(juego)}
+            disabled={juegoActionId === juego.id}
+          >
+            {juego.estado === "propuesto" ? "Confirmar" : "Volver a propuesto"}
+          </button>
+          <button className="btn-small btn-edit" onClick={() => startJuegoEdit(juego)}>
+            Editar
+          </button>
+          <button
+            className="btn-small btn-delete"
+            disabled={juegoActionId === juego.id}
+            onClick={() => handleDeleteJuego(juego.id, juego.nombre)}
+          >
+            Eliminar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const navItems = [
     { key: "dashboard", label: "Dashboard", icon: "📊" },
     { key: "inscripciones", label: "Inscripciones", icon: "📝", badge: inscripciones.length },
     { key: "equipos", label: "Equipos", icon: "🎽" },
+    { key: "juegos", label: "Juegos", icon: "🎮", badge: juegos.length },
+    { key: "planificacion", label: "Planificación", icon: "📅", badge: partidos.length },
+    { key: "configuracion", label: "Configuración", icon: "⚙️" },
     { key: "galeria", label: "Galería", icon: "📸", badge: galeria.length },
   ];
 
@@ -391,6 +695,9 @@ export default function AdminPage() {
     dashboard: "📊 Dashboard",
     inscripciones: `📝 Inscripciones (${filteredInscripciones.length} de ${inscripciones.length})`,
     equipos: "🎽 Logos de equipos",
+    juegos: "🎮 Juegos",
+    planificacion: "📅 Planificación",
+    configuracion: "⚙️ Configuración",
     galeria: `📸 Galería del evento (${galeria.length})`,
   };
 
@@ -869,6 +1176,353 @@ export default function AdminPage() {
                 )
               )}
               </>
+            )}
+
+            {activeTab === "juegos" && (
+              <>
+              {!showNewJuegoForm ? (
+                <button
+                  className="btn btn-primary"
+                  style={{ marginBottom: 20 }}
+                  onClick={() => setShowNewJuegoForm(true)}
+                >
+                  + Nuevo juego
+                </button>
+              ) : (
+                <form onSubmit={handleCreateJuego} className="equipo-manage-card equipo-editing" style={{ marginBottom: 20 }}>
+                  {newJuegoError && <div className="alert alert-error" style={{ width: "100%" }}>{newJuegoError}</div>}
+                  <div className="equipo-edit-fields">
+                    <input
+                      placeholder="Nombre del juego"
+                      value={newJuegoForm.nombre}
+                      onChange={(e) => setNewJuegoForm((f) => ({ ...f, nombre: e.target.value }))}
+                      maxLength={150}
+                      required
+                      autoFocus
+                    />
+                    <input
+                      placeholder="Descripción (opcional)"
+                      value={newJuegoForm.descripcion}
+                      onChange={(e) => setNewJuegoForm((f) => ({ ...f, descripcion: e.target.value }))}
+                      maxLength={500}
+                    />
+                  </div>
+                  <div className="row-actions">
+                    <button type="submit" className="btn-small btn-save" disabled={creatingJuego}>
+                      {creatingJuego ? "..." : "Crear"}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-small btn-cancel"
+                      disabled={creatingJuego}
+                      onClick={() => {
+                        setShowNewJuegoForm(false);
+                        setNewJuegoError("");
+                        setNewJuegoForm({ nombre: "", descripcion: "" });
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {juegoEditError && <div className="alert alert-error">{juegoEditError}</div>}
+
+              <div className="juegos-columns">
+                <div className="juegos-column">
+                  <h3>🎯 Propuestos</h3>
+                  {juegosPropuestos.length === 0 && <p className="empty-chart">Sin juegos propuestos.</p>}
+                  {juegosPropuestos.map(renderJuegoCard)}
+                </div>
+                <div className="juegos-column">
+                  <h3>✅ Confirmados</h3>
+                  {juegosConfirmados.length === 0 && <p className="empty-chart">Sin juegos confirmados.</p>}
+                  {juegosConfirmados.map(renderJuegoCard)}
+                </div>
+              </div>
+              </>
+            )}
+
+            {activeTab === "planificacion" && (
+              <>
+              {juegosConfirmados.length === 0 ? (
+                <p className="empty-chart">
+                  Primero confirma al menos un juego en la pestaña "Juegos" para poder planificar partidos.
+                </p>
+              ) : (
+                <>
+                {!showNewPartidoForm ? (
+                  <button
+                    className="btn btn-primary"
+                    style={{ marginBottom: 20 }}
+                    onClick={() => setShowNewPartidoForm(true)}
+                  >
+                    + Nuevo partido
+                  </button>
+                ) : (
+                  <form onSubmit={handleCreatePartido} className="partido-form">
+                    {newPartidoError && <div className="alert alert-error">{newPartidoError}</div>}
+                    <div className="form-group">
+                      <label>Juego</label>
+                      <select
+                        value={newPartidoForm.juegoId}
+                        onChange={(e) => setNewPartidoForm((f) => ({ ...f, juegoId: e.target.value }))}
+                        required
+                      >
+                        <option value="">Selecciona un juego</option>
+                        {juegosConfirmados.map((j) => (
+                          <option key={j.id} value={j.id}>
+                            {j.nombre}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Equipo A</label>
+                        <select
+                          value={newPartidoForm.equipoAId}
+                          onChange={(e) => setNewPartidoForm((f) => ({ ...f, equipoAId: e.target.value }))}
+                          required
+                        >
+                          <option value="">Selecciona equipo</option>
+                          {equipos.map((eq) => (
+                            <option key={eq.id} value={eq.id}>
+                              {eq.nombre}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label>Equipo B</label>
+                        <select
+                          value={newPartidoForm.equipoBId}
+                          onChange={(e) => setNewPartidoForm((f) => ({ ...f, equipoBId: e.target.value }))}
+                          required
+                        >
+                          <option value="">Selecciona equipo</option>
+                          {equipos.map((eq) => (
+                            <option key={eq.id} value={eq.id}>
+                              {eq.nombre}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Hora de inicio</label>
+                        <input
+                          type="datetime-local"
+                          value={newPartidoForm.horaInicio}
+                          onChange={(e) => setNewPartidoForm((f) => ({ ...f, horaInicio: e.target.value }))}
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Hora de fin</label>
+                        <input
+                          type="datetime-local"
+                          value={newPartidoForm.horaFin}
+                          onChange={(e) => setNewPartidoForm((f) => ({ ...f, horaFin: e.target.value }))}
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="row-actions">
+                      <button type="submit" className="btn-small btn-save" disabled={creatingPartido}>
+                        {creatingPartido ? "..." : "Crear partido"}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-small btn-cancel"
+                        disabled={creatingPartido}
+                        onClick={() => {
+                          setShowNewPartidoForm(false);
+                          setNewPartidoError("");
+                          setNewPartidoForm(emptyPartidoForm);
+                        }}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </form>
+                )}
+                </>
+              )}
+
+              {partidoEditError && <div className="alert alert-error">{partidoEditError}</div>}
+
+              <div className="partidos-list">
+                {partidos.length === 0 && <p className="empty-chart">Aún no hay partidos programados.</p>}
+                {partidos.map((p) =>
+                  editingPartidoId === p.id ? (
+                    <form
+                      key={p.id}
+                      className="partido-form"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        savePartidoEdit(p.id);
+                      }}
+                    >
+                      <div className="form-group">
+                        <label>Juego</label>
+                        <select
+                          value={partidoEditForm.juegoId}
+                          onChange={(e) => setPartidoEditForm((f) => ({ ...f, juegoId: e.target.value }))}
+                          required
+                        >
+                          {juegos.map((j) => (
+                            <option key={j.id} value={j.id}>
+                              {j.nombre}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label>Equipo A</label>
+                          <select
+                            value={partidoEditForm.equipoAId}
+                            onChange={(e) => setPartidoEditForm((f) => ({ ...f, equipoAId: e.target.value }))}
+                            required
+                          >
+                            {equipos.map((eq) => (
+                              <option key={eq.id} value={eq.id}>
+                                {eq.nombre}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="form-group">
+                          <label>Equipo B</label>
+                          <select
+                            value={partidoEditForm.equipoBId}
+                            onChange={(e) => setPartidoEditForm((f) => ({ ...f, equipoBId: e.target.value }))}
+                            required
+                          >
+                            {equipos.map((eq) => (
+                              <option key={eq.id} value={eq.id}>
+                                {eq.nombre}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label>Hora de inicio</label>
+                          <input
+                            type="datetime-local"
+                            value={partidoEditForm.horaInicio}
+                            onChange={(e) => setPartidoEditForm((f) => ({ ...f, horaInicio: e.target.value }))}
+                            required
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Hora de fin</label>
+                          <input
+                            type="datetime-local"
+                            value={partidoEditForm.horaFin}
+                            onChange={(e) => setPartidoEditForm((f) => ({ ...f, horaFin: e.target.value }))}
+                            required
+                          />
+                        </div>
+                      </div>
+                      <div className="row-actions">
+                        <button type="submit" className="btn-small btn-save" disabled={savingPartidoEdit}>
+                          {savingPartidoEdit ? "..." : "Guardar"}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-small btn-cancel"
+                          onClick={cancelPartidoEdit}
+                          disabled={savingPartidoEdit}
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <div className="partido-card" key={p.id}>
+                      <div className="partido-juego">{p.juego_nombre}</div>
+                      <div className="partido-vs">
+                        <span className="partido-equipo" style={{ "--team-color": p.equipo_a_color }}>
+                          {p.equipo_a_nombre}
+                        </span>
+                        <span className="partido-vs-label">VS</span>
+                        <span className="partido-equipo" style={{ "--team-color": p.equipo_b_color }}>
+                          {p.equipo_b_nombre}
+                        </span>
+                      </div>
+                      <div className="partido-hora">
+                        {new Date(p.hora_inicio).toLocaleString("es-MX", {
+                          day: "2-digit",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                        {" – "}
+                        {new Date(p.hora_fin).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
+                      </div>
+                      <div className="row-actions">
+                        <button className="btn-small btn-edit" onClick={() => startPartidoEdit(p)}>
+                          Editar
+                        </button>
+                        <button
+                          className="btn-small btn-delete"
+                          disabled={deletingPartidoId === p.id}
+                          onClick={() => handleDeletePartido(p.id)}
+                        >
+                          {deletingPartidoId === p.id ? "..." : "Eliminar"}
+                        </button>
+                      </div>
+                    </div>
+                  )
+                )}
+              </div>
+              </>
+            )}
+
+            {activeTab === "configuracion" && (
+              <form onSubmit={handleSaveConfig} className="form-card" style={{ margin: 0, maxWidth: 480 }}>
+                {configError && <div className="alert alert-error">{configError}</div>}
+                {configSuccess && <div className="alert alert-success">Configuración guardada.</div>}
+                <div className="form-group">
+                  <label htmlFor="eventoNombre">Nombre del evento</label>
+                  <input
+                    id="eventoNombre"
+                    value={configForm.eventoNombre}
+                    onChange={(e) => setConfigForm((f) => ({ ...f, eventoNombre: e.target.value }))}
+                    maxLength={200}
+                    placeholder="Evento Deportivo Familiar Aranda 2026"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="eventoFecha">Fecha y hora del evento</label>
+                  <input
+                    id="eventoFecha"
+                    type="datetime-local"
+                    value={configForm.eventoFecha}
+                    onChange={(e) => setConfigForm((f) => ({ ...f, eventoFecha: e.target.value }))}
+                  />
+                  <p className="hint">Se mostrará como cuenta regresiva en la portada.</p>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="eventoSede">Sede / lugar</label>
+                  <input
+                    id="eventoSede"
+                    value={configForm.eventoSede}
+                    onChange={(e) => setConfigForm((f) => ({ ...f, eventoSede: e.target.value }))}
+                    maxLength={200}
+                    placeholder="Parque Central, Ciudad"
+                  />
+                </div>
+                <button type="submit" className="btn btn-primary" style={{ width: "100%" }} disabled={savingConfig}>
+                  {savingConfig ? "Guardando..." : "Guardar configuración"}
+                </button>
+              </form>
             )}
 
             {activeTab === "galeria" && (

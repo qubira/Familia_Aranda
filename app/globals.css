@@ -171,6 +171,113 @@ h3 {
   }
 }
 
+.countdown {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+
+.countdown-box {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  padding: 12px 16px;
+  min-width: 72px;
+  text-align: center;
+}
+
+.countdown-value {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--gold);
+}
+
+.countdown-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.85;
+  margin-top: 4px;
+}
+
+.countdown-today {
+  display: inline-block;
+  background: var(--gold);
+  color: #4a2f00;
+  font-weight: 800;
+  padding: 12px 24px;
+  border-radius: 999px;
+  margin-bottom: 32px;
+}
+
+.schedule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.schedule-item {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.schedule-time {
+  text-align: center;
+  min-width: 64px;
+  flex-shrink: 0;
+  border-right: 2px solid var(--border);
+  padding-right: 16px;
+}
+
+.schedule-time-main {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  color: var(--navy);
+}
+
+.schedule-time-sub {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--muted);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.schedule-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.schedule-juego {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 4px;
+  font-size: 0.95rem;
+}
+
+.schedule-vs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  flex-wrap: wrap;
+}
+
 .btn {
   display: inline-block;
   padding: 15px 36px;
@@ -501,6 +608,94 @@ h3 {
   height: 40px;
   object-fit: cover;
   border-radius: 8px;
+}
+
+/* Juegos */
+.juegos-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.juegos-column h3 {
+  margin: 0 0 14px;
+  font-size: 1.1rem;
+  color: var(--navy);
+}
+
+.juego-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+
+.juego-info strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.juego-info p {
+  margin: 0 0 10px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* Planificacion */
+.partido-form {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-top: 6px solid var(--accent);
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 20px;
+  max-width: 560px;
+}
+
+.partidos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.partido-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.partido-juego {
+  font-weight: 700;
+  min-width: 120px;
+}
+
+.partido-vs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+}
+
+.partido-equipo {
+  color: var(--team-color, var(--navy));
+}
+
+.partido-vs-label {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.partido-hora {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
 .gallery-admin-item {

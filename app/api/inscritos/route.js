@@ -6,7 +6,7 @@ export async function GET() {
     SELECT i.id, i.nombre_completo, i.foto_url, e.nombre AS equipo, e.color AS equipo_color
     FROM inscripciones i
     JOIN equipos e ON e.id = i.equipo_id
-    ORDER BY i.created_at DESC
+    ORDER BY e.id, i.created_at ASC
   `;
   return NextResponse.json({ inscritos });
 }

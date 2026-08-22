@@ -29,6 +29,36 @@ CREATE TABLE IF NOT EXISTS fotos_evento (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS juegos (
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(150) NOT NULL,
+  descripcion TEXT,
+  estado VARCHAR(20) NOT NULL DEFAULT 'propuesto' CHECK (estado IN ('propuesto', 'confirmado')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS partidos (
+  id SERIAL PRIMARY KEY,
+  juego_id INTEGER NOT NULL REFERENCES juegos(id),
+  equipo_a_id INTEGER NOT NULL REFERENCES equipos(id),
+  equipo_b_id INTEGER NOT NULL REFERENCES equipos(id),
+  hora_inicio TIMESTAMPTZ NOT NULL,
+  hora_fin TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CHECK (equipo_a_id <> equipo_b_id),
+  CHECK (hora_fin > hora_inicio)
+);
+
+CREATE TABLE IF NOT EXISTS configuracion (
+  id INTEGER PRIMARY KEY DEFAULT 1,
+  evento_nombre VARCHAR(200),
+  evento_fecha TIMESTAMPTZ,
+  evento_sede VARCHAR(200),
+  CHECK (id = 1)
+);
+
+INSERT INTO configuracion (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
+
 ALTER TABLE equipos ADD COLUMN IF NOT EXISTS logo_url TEXT;
 ALTER TABLE equipos ADD COLUMN IF NOT EXISTS logo_public_id TEXT;
 ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS foto_url TEXT;
