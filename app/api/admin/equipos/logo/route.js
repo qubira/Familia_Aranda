@@ -2,6 +2,7 @@ import { sql } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { uploadImage, deleteImage } from "@/lib/cloudinary";
 import { validateImageFile } from "@/lib/imageValidation";
+import { logAudit } from "@/lib/auditLog";
 
 export async function POST(request) {
   const formData = await request.formData().catch(() => null);
@@ -42,6 +43,13 @@ export async function POST(request) {
   if (equipo.logo_public_id) {
     deleteImage(equipo.logo_public_id).catch(() => {});
   }
+
+  await logAudit(request, {
+    accion: "editar",
+    entidad: "equipo",
+    entidadId: equipoId,
+    detalle: "Actualizó el logo del equipo",
+  });
 
   return NextResponse.json({ ok: true, url: result.secure_url });
 }

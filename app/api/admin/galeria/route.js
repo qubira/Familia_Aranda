@@ -2,6 +2,7 @@ import { sql } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { uploadImage } from "@/lib/cloudinary";
 import { validateImageFile } from "@/lib/imageValidation";
+import { logAudit } from "@/lib/auditLog";
 
 export async function GET() {
   const fotos = await sql`
@@ -39,6 +40,13 @@ export async function POST(request) {
     VALUES (${result.secure_url}, ${result.public_id}, ${descripcion || null})
     RETURNING id, url, public_id, descripcion, created_at
   `;
+
+  await logAudit(request, {
+    accion: "crear",
+    entidad: "foto",
+    entidadId: foto.id,
+    detalle: "Subió una foto a la galería",
+  });
 
   return NextResponse.json({ ok: true, foto }, { status: 201 });
 }

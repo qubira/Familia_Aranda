@@ -17,7 +17,12 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <a href="/admin" className="admin-quick-btn">
+          🔐 Admin
+        </a>
+        {children}
+      </body>
     </html>
   );
 }

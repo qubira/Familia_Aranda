@@ -1,6 +1,7 @@
 import { sql } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { validateActividadInput } from "@/lib/actividadValidation";
+import { logAudit } from "@/lib/auditLog";
 
 export async function GET() {
   const actividades = await sql`
@@ -25,6 +26,13 @@ export async function POST(request) {
     VALUES (${data.nombre}, ${data.horaInicio.toISOString()}, ${data.horaFin ? data.horaFin.toISOString() : null})
     RETURNING id
   `;
+
+  await logAudit(request, {
+    accion: "crear",
+    entidad: "actividad",
+    entidadId: actividad.id,
+    detalle: `Creó la actividad "${data.nombre}"`,
+  });
 
   return NextResponse.json({ ok: true, id: actividad.id }, { status: 201 });
 }

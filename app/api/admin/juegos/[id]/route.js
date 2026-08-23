@@ -2,6 +2,7 @@ import { sql } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { validateJuegoInput } from "@/lib/juegoValidation";
 import { deleteImage } from "@/lib/cloudinary";
+import { logAudit } from "@/lib/auditLog";
 
 export async function PATCH(request, { params }) {
   const id = Number((await params).id);
@@ -30,6 +31,13 @@ export async function PATCH(request, { params }) {
     return NextResponse.json({ error: "El juego no existe." }, { status: 404 });
   }
 
+  await logAudit(request, {
+    accion: "editar",
+    entidad: "juego",
+    entidadId: id,
+    detalle: `Editó el juego "${data.nombre}"`,
+  });
+
   return NextResponse.json({ ok: true });
 }
 
@@ -47,7 +55,7 @@ export async function DELETE(request, { params }) {
     );
   }
 
-  const [deleted] = await sql`DELETE FROM juegos WHERE id = ${id} RETURNING id, imagen_public_id`;
+  const [deleted] = await sql`DELETE FROM juegos WHERE id = ${id} RETURNING id, nombre, imagen_public_id`;
   if (!deleted) {
     return NextResponse.json({ error: "El juego no existe." }, { status: 404 });
   }
@@ -55,6 +63,13 @@ export async function DELETE(request, { params }) {
   if (deleted.imagen_public_id) {
     deleteImage(deleted.imagen_public_id).catch(() => {});
   }
+
+  await logAudit(request, {
+    accion: "eliminar",
+    entidad: "juego",
+    entidadId: id,
+    detalle: `Eliminó el juego "${deleted.nombre}"`,
+  });
 
   return NextResponse.json({ ok: true });
 }

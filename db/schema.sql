@@ -74,6 +74,20 @@ CREATE TABLE IF NOT EXISTS configuracion (
 
 INSERT INTO configuracion (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
 
+CREATE TABLE IF NOT EXISTS bitacora (
+  id SERIAL PRIMARY KEY,
+  accion VARCHAR(20) NOT NULL,
+  entidad VARCHAR(30) NOT NULL,
+  entidad_id INTEGER,
+  detalle TEXT,
+  ip VARCHAR(64),
+  dispositivo VARCHAR(50),
+  user_agent TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_bitacora_created ON bitacora(created_at DESC);
+
 ALTER TABLE equipos ADD COLUMN IF NOT EXISTS logo_url TEXT;
 ALTER TABLE equipos ADD COLUMN IF NOT EXISTS logo_public_id TEXT;
 ALTER TABLE inscripciones ADD COLUMN IF NOT EXISTS foto_url TEXT;

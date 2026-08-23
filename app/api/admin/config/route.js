@@ -1,5 +1,6 @@
 import { sql } from "@/lib/db";
 import { NextResponse } from "next/server";
+import { logAudit } from "@/lib/auditLog";
 
 export async function GET() {
   const [config] = await sql`SELECT evento_nombre, evento_fecha, evento_sede FROM configuracion WHERE id = 1`;
@@ -33,6 +34,12 @@ export async function PUT(request) {
         evento_sede = ${sede || null}
     WHERE id = 1
   `;
+
+  await logAudit(request, {
+    accion: "editar",
+    entidad: "configuracion",
+    detalle: `Actualizó la configuración del evento (${nombre || "sin nombre"})`,
+  });
 
   return NextResponse.json({ ok: true });
 }

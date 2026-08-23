@@ -1,6 +1,7 @@
 import { sql } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { validatePartidoInput } from "@/lib/partidoValidation";
+import { logAudit } from "@/lib/auditLog";
 
 export async function PATCH(request, { params }) {
   const id = Number((await params).id);
@@ -36,6 +37,13 @@ export async function PATCH(request, { params }) {
     return NextResponse.json({ error: "El partido no existe." }, { status: 404 });
   }
 
+  await logAudit(request, {
+    accion: "editar",
+    entidad: "partido",
+    entidadId: id,
+    detalle: `Editó un partido (ronda: ${data.ronda})`,
+  });
+
   return NextResponse.json({ ok: true });
 }
 
@@ -49,6 +57,13 @@ export async function DELETE(request, { params }) {
   if (!deleted) {
     return NextResponse.json({ error: "El partido no existe." }, { status: 404 });
   }
+
+  await logAudit(request, {
+    accion: "eliminar",
+    entidad: "partido",
+    entidadId: id,
+    detalle: "Eliminó un partido",
+  });
 
   return NextResponse.json({ ok: true });
 }

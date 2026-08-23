@@ -1,6 +1,7 @@
 import { sql } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { deleteImage } from "@/lib/cloudinary";
+import { logAudit } from "@/lib/auditLog";
 
 export async function DELETE(request, { params }) {
   const id = Number((await params).id);
@@ -14,6 +15,13 @@ export async function DELETE(request, { params }) {
   }
 
   deleteImage(foto.public_id).catch(() => {});
+
+  await logAudit(request, {
+    accion: "eliminar",
+    entidad: "foto",
+    entidadId: id,
+    detalle: "Eliminó una foto de la galería",
+  });
 
   return NextResponse.json({ ok: true });
 }

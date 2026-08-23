@@ -116,6 +116,9 @@ export default function AdminPage() {
   const [configSuccess, setConfigSuccess] = useState(false);
   const [debouncedSede, setDebouncedSede] = useState("");
 
+  const [bitacora, setBitacora] = useState([]);
+  const [bitacoraLoaded, setBitacoraLoaded] = useState(false);
+
   useEffect(() => {
     const timeout = setTimeout(() => setDebouncedSede(configForm.eventoSede.trim()), 600);
     return () => clearTimeout(timeout);
@@ -158,6 +161,21 @@ export default function AdminPage() {
   useEffect(() => {
     loadAll();
   }, []);
+
+  async function loadBitacora() {
+    const res = await fetch("/api/admin/bitacora");
+    if (res.ok) {
+      const data = await res.json();
+      setBitacora(data.registros || []);
+      setBitacoraLoaded(true);
+    }
+  }
+
+  useEffect(() => {
+    if (activeTab === "bitacora" && authState === "in") {
+      loadBitacora();
+    }
+  }, [activeTab, authState]);
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -882,6 +900,7 @@ export default function AdminPage() {
     { key: "planificacion", label: "Planificación", icon: "📅", badge: partidos.length + actividades.length },
     { key: "configuracion", label: "Configuración", icon: "⚙️" },
     { key: "galeria", label: "Galería", icon: "📸", badge: galeria.length },
+    { key: "bitacora", label: "Bitácora", icon: "🕵️" },
   ];
 
   const tabTitles = {
@@ -892,6 +911,14 @@ export default function AdminPage() {
     planificacion: "📅 Planificación",
     configuracion: "⚙️ Configuración",
     galeria: `📸 Galería del evento (${galeria.length})`,
+    bitacora: "🕵️ Bitácora de actividad",
+  };
+
+  const accionLabels = {
+    login: "Inició sesión",
+    crear: "Creó",
+    editar: "Editó",
+    eliminar: "Eliminó",
   };
 
   return (
@@ -2035,6 +2062,52 @@ export default function AdminPage() {
                     {foto.descripcion && <div className="caption">{foto.descripcion}</div>}
                   </div>
                 ))}
+              </div>
+              </>
+            )}
+
+            {activeTab === "bitacora" && (
+              <>
+              <p className="hint" style={{ marginBottom: 16 }}>
+                Registro de quién inició sesión y qué se creó, editó o eliminó desde el panel: IP, dispositivo y hora.
+              </p>
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Fecha y hora</th>
+                      <th>Acción</th>
+                      <th>Detalle</th>
+                      <th>Dispositivo</th>
+                      <th>IP</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bitacora.map((r) => (
+                      <tr key={r.id}>
+                        <td>{new Date(r.created_at).toLocaleString("es-MX")}</td>
+                        <td>{accionLabels[r.accion] || r.accion}</td>
+                        <td>{r.detalle || "—"}</td>
+                        <td>{r.dispositivo || "—"}</td>
+                        <td>{r.ip || "—"}</td>
+                      </tr>
+                    ))}
+                    {bitacoraLoaded && bitacora.length === 0 && (
+                      <tr>
+                        <td colSpan={5} style={{ textAlign: "center", color: "var(--muted)" }}>
+                          Aún no hay actividad registrada.
+                        </td>
+                      </tr>
+                    )}
+                    {!bitacoraLoaded && (
+                      <tr>
+                        <td colSpan={5} style={{ textAlign: "center", color: "var(--muted)" }}>
+                          Cargando...
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
               </>
             )}

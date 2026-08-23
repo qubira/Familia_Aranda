@@ -2,6 +2,7 @@ import { sql } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { validateEquipoInput } from "@/lib/equipoValidation";
 import { deleteImage } from "@/lib/cloudinary";
+import { logAudit } from "@/lib/auditLog";
 
 export async function PATCH(request, { params }) {
   const id = Number((await params).id);
@@ -36,6 +37,13 @@ export async function PATCH(request, { params }) {
     throw err;
   }
 
+  await logAudit(request, {
+    accion: "editar",
+    entidad: "equipo",
+    entidadId: id,
+    detalle: `Editó el equipo "${data.nombre}"`,
+  });
+
   return NextResponse.json({ ok: true });
 }
 
@@ -58,7 +66,7 @@ export async function DELETE(request, { params }) {
     return NextResponse.json({ error: "Debe existir al menos un equipo." }, { status: 400 });
   }
 
-  const [deleted] = await sql`DELETE FROM equipos WHERE id = ${id} RETURNING logo_public_id`;
+  const [deleted] = await sql`DELETE FROM equipos WHERE id = ${id} RETURNING nombre, logo_public_id`;
   if (!deleted) {
     return NextResponse.json({ error: "El equipo no existe." }, { status: 404 });
   }
@@ -66,6 +74,13 @@ export async function DELETE(request, { params }) {
   if (deleted.logo_public_id) {
     deleteImage(deleted.logo_public_id).catch(() => {});
   }
+
+  await logAudit(request, {
+    accion: "eliminar",
+    entidad: "equipo",
+    entidadId: id,
+    detalle: `Eliminó el equipo "${deleted.nombre}"`,
+  });
 
   return NextResponse.json({ ok: true });
 }

@@ -1,6 +1,7 @@
 import { sql } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { validateEquipoInput } from "@/lib/equipoValidation";
+import { logAudit } from "@/lib/auditLog";
 
 export async function POST(request) {
   const body = await request.json().catch(() => null);
@@ -19,6 +20,12 @@ export async function POST(request) {
       VALUES (${data.nombre}, ${data.descripcion}, ${data.color})
       RETURNING id
     `;
+    await logAudit(request, {
+      accion: "crear",
+      entidad: "equipo",
+      entidadId: equipo.id,
+      detalle: `Creó el equipo "${data.nombre}"`,
+    });
     return NextResponse.json({ ok: true, id: equipo.id }, { status: 201 });
   } catch (err) {
     if (err?.code === "23505") {

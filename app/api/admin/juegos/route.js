@@ -1,6 +1,7 @@
 import { sql } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { validateJuegoInput } from "@/lib/juegoValidation";
+import { logAudit } from "@/lib/auditLog";
 
 export async function GET() {
   const juegos = await sql`SELECT id, nombre, descripcion, estado, imagen_url FROM juegos ORDER BY created_at DESC`;
@@ -23,6 +24,13 @@ export async function POST(request) {
     VALUES (${data.nombre}, ${data.descripcion}, ${data.estado})
     RETURNING id
   `;
+
+  await logAudit(request, {
+    accion: "crear",
+    entidad: "juego",
+    entidadId: juego.id,
+    detalle: `Creó el juego "${data.nombre}"`,
+  });
 
   return NextResponse.json({ ok: true, id: juego.id }, { status: 201 });
 }

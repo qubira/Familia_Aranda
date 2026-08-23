@@ -1,6 +1,7 @@
 import { sql } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { validatePartidoInput } from "@/lib/partidoValidation";
+import { logAudit } from "@/lib/auditLog";
 
 export async function GET() {
   const partidos = await sql`
@@ -44,6 +45,13 @@ export async function POST(request) {
     VALUES (${data.juegoId}, ${data.equipoAId}, ${data.equipoBId}, ${data.horaInicio.toISOString()}, ${data.horaFin.toISOString()}, ${data.ronda}, ${data.ganadorId})
     RETURNING id
   `;
+
+  await logAudit(request, {
+    accion: "crear",
+    entidad: "partido",
+    entidadId: partido.id,
+    detalle: `Creó un partido (ronda: ${data.ronda})`,
+  });
 
   return NextResponse.json({ ok: true, id: partido.id }, { status: 201 });
 }

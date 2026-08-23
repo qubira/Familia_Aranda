@@ -1,6 +1,7 @@
 import { sql } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { validateInscripcionInput } from "@/lib/inscripcionValidation";
+import { logAudit } from "@/lib/auditLog";
 
 export async function PATCH(request, { params }) {
   const id = Number((await params).id);
@@ -42,6 +43,13 @@ export async function PATCH(request, { params }) {
     return NextResponse.json({ error: "No encontrada." }, { status: 404 });
   }
 
+  await logAudit(request, {
+    accion: "editar",
+    entidad: "inscripcion",
+    entidadId: id,
+    detalle: `Editó la inscripción de ${data.nombreCompleto}`,
+  });
+
   return NextResponse.json({ ok: true });
 }
 
@@ -51,10 +59,17 @@ export async function DELETE(request, { params }) {
     return NextResponse.json({ error: "ID inválido." }, { status: 400 });
   }
 
-  const [deleted] = await sql`DELETE FROM inscripciones WHERE id = ${id} RETURNING id`;
+  const [deleted] = await sql`DELETE FROM inscripciones WHERE id = ${id} RETURNING id, nombre_completo`;
   if (!deleted) {
     return NextResponse.json({ error: "No encontrada." }, { status: 404 });
   }
+
+  await logAudit(request, {
+    accion: "eliminar",
+    entidad: "inscripcion",
+    entidadId: id,
+    detalle: `Eliminó la inscripción de ${deleted.nombre_completo}`,
+  });
 
   return NextResponse.json({ ok: true });
 }
